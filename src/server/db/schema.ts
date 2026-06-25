@@ -74,4 +74,12 @@ CREATE TABLE IF NOT EXISTS sync_state (
   status TEXT NOT NULL DEFAULT 'idle',
   error TEXT
 );
+
+CREATE TABLE IF NOT EXISTS tab_repos (
+  position INTEGER NOT NULL,
+  tab_name TEXT NOT NULL,
+  repo_id TEXT NOT NULL REFERENCES repos(id) ON DELETE CASCADE,
+  PRIMARY KEY (position, repo_id)
+);
+CREATE INDEX IF NOT EXISTS idx_tab_repos_pos ON tab_repos(position);
 `;
