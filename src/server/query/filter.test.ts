@@ -144,4 +144,25 @@ describe("compileFilter", () => {
       ids(compileFilter({ fields: [{ name: "Priority", unset: true }] }, ["R_1", "R_2"], now)),
     ).toEqual(["I_2"]);
   });
+
+  it("matches labels case-insensitively by default", () => {
+    expect(ids(compileFilter({ labelsInclude: ["BUG"] }, ["R_1", "R_2"], now))).toEqual([
+      "I_1",
+      "I_3",
+    ]);
+  });
+
+  it("matches field name and value case-insensitively by default", () => {
+    expect(
+      ids(compileFilter({ fields: [{ name: "priority", in: ["high"] }] }, ["R_1", "R_2"], now)),
+    ).toEqual(["I_1"]);
+  });
+
+  it("is exact when caseSensitive is true", () => {
+    expect(ids(compileFilter({ labelsInclude: ["BUG"] }, ["R_1", "R_2"], now, true))).toEqual([]);
+    expect(ids(compileFilter({ labelsInclude: ["bug"] }, ["R_1", "R_2"], now, true))).toEqual([
+      "I_1",
+      "I_3",
+    ]);
+  });
 });

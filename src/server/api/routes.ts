@@ -50,7 +50,15 @@ export function createApp(deps: AppDeps): express.Express {
       return;
     }
     const repoIds = tabRepoIdsByName(deps.db).get(tab.name) ?? [];
-    res.json(assembleTab(deps.db, { position: index, tabName: tab.name, repoIds }, tab, now()));
+    res.json(
+      assembleTab(
+        deps.db,
+        { position: index, tabName: tab.name, repoIds },
+        tab,
+        now(),
+        deps.config.caseSensitive,
+      ),
+    );
   });
 
   app.get("/api/refresh/status", (_req, res) => {

@@ -20,13 +20,21 @@ const DAY_MS = 86_400_000;
  * Compiles a group's structured filter into a parameterized SQL WHERE clause
  * over the `issues` table (joined to its satellite tables via EXISTS). Always
  * scopes to the given repo ids; an empty repo set matches nothing.
+ *
+ * String comparisons (labels, assignee, author, milestone, issue type, field
+ * names and values) are case-insensitive by default and become case-sensitive
+ * when `caseSensitive` is true. SQLite NOCASE folds ASCII case only.
  */
 export function compileFilter(
   filter: GroupFilter | undefined,
   repoIds: string[],
   now: Date,
+  caseSensitive = false,
 ): CompiledFilter {
   if (repoIds.length === 0) return { where: "0", params: [] };
+
+  // Applied to the string-valued operand so the comparison folds case.
+  const c = caseSensitive ? "" : " COLLATE NOCASE";
 
   const conditions: string[] = [];
   const params: unknown[] = [];
@@ -42,35 +50,37 @@ export function compileFilter(
 
     for (const label of filter.labelsInclude ?? []) {
       conditions.push(
-        "EXISTS (SELECT 1 FROM issue_labels l WHERE l.issue_id = issues.id AND l.label = ?)",
+        `EXISTS (SELECT 1 FROM issue_labels l WHERE l.issue_id = issues.id AND l.label${c} = ?)`,
       );
       params.push(label);
     }
 
     for (const label of filter.labelsExclude ?? []) {
       conditions.push(
-        "NOT EXISTS (SELECT 1 FROM issue_labels l WHERE l.issue_id = issues.id AND l.label = ?)",
+        `NOT EXISTS (SELECT 1 FROM issue_labels l WHERE l.issue_id = issues.id AND l.label${c} = ?)`,
       );
       params.push(label);
     }
 
     if (filter.assignee !== undefined) {
-      conditions.push("EXISTS (SELECT 1 FROM json_each(issues.assignees) WHERE value = ?)");
+      conditions.push(`EXISTS (SELECT 1 FROM json_each(issues.assignees) WHERE value${c} = ?)`);
       params.push(filter.assignee);
     }
 
     if (filter.author !== undefined) {
-      conditions.push("issues.author = ?");
+      conditions.push(`issues.author${c} = ?`);
       params.push(filter.author);
     }
 
     if (filter.milestone !== undefined) {
-      conditions.push("issues.milestone = ?");
+      conditions.push(`issues.milestone${c} = ?`);
       params.push(filter.milestone);
     }
 
     if (filter.issueType && filter.issueType.length > 0) {
-      conditions.push(`issues.issue_type_name IN (${filter.issueType.map(() => "?").join(", ")})`);
+      conditions.push(
+        `issues.issue_type_name${c} IN (${filter.issueType.map(() => "?").join(", ")})`,
+      );
       params.push(...filter.issueType);
     }
 
@@ -86,7 +96,7 @@ export function compileFilter(
     for (const f of filter.fields ?? []) {
       if (f.in && f.in.length > 0) {
         conditions.push(
-          `EXISTS (SELECT 1 FROM issue_field_values v WHERE v.issue_id = issues.id AND v.field_name = ? AND v.value_text IN (${f.in
+          `EXISTS (SELECT 1 FROM issue_field_values v WHERE v.issue_id = issues.id AND v.field_name${c} = ? AND v.value_text${c} IN (${f.in
             .map(() => "?")
             .join(", ")}))`,
         );
@@ -96,7 +106,7 @@ export function compileFilter(
         // Matches when the field has none of these values, including issues that
         // have no value for the field at all (mirrors labelsExclude).
         conditions.push(
-          `NOT EXISTS (SELECT 1 FROM issue_field_values v WHERE v.issue_id = issues.id AND v.field_name = ? AND v.value_text IN (${f.notIn
+          `NOT EXISTS (SELECT 1 FROM issue_field_values v WHERE v.issue_id = issues.id AND v.field_name${c} = ? AND v.value_text${c} IN (${f.notIn
             .map(() => "?")
             .join(", ")}))`,
         );
@@ -106,13 +116,13 @@ export function compileFilter(
         const op = NUMERIC_OPS[f.op];
         if (!op) throw new Error(`Unsupported field operator: ${f.op}`);
         conditions.push(
-          `EXISTS (SELECT 1 FROM issue_field_values v WHERE v.issue_id = issues.id AND v.field_name = ? AND v.value_number ${op} ?)`,
+          `EXISTS (SELECT 1 FROM issue_field_values v WHERE v.issue_id = issues.id AND v.field_name${c} = ? AND v.value_number ${op} ?)`,
         );
         params.push(f.name, f.value);
       }
       if (f.unset) {
         conditions.push(
-          "NOT EXISTS (SELECT 1 FROM issue_field_values v WHERE v.issue_id = issues.id AND v.field_name = ?)",
+          `NOT EXISTS (SELECT 1 FROM issue_field_values v WHERE v.issue_id = issues.id AND v.field_name${c} = ?)`,
         );
         params.push(f.name);
       }

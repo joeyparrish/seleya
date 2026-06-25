@@ -78,6 +78,7 @@ schema reference with filter recipes and a cheat sheet). Top-level keys:
 | `syncConcurrency` | How many repositories to sync in parallel (default 6). |
 | `bindAddress` | Network interface to bind (default `127.0.0.1`). |
 | `port` | Port to listen on. |
+| `caseSensitive` | When false (the default), issue filters match case-insensitively. |
 | `forkAllowlist` | List of `owner/name` forks to include despite the fork exclusion. |
 | `tabs` | The ordered list of tabs (see below). |
 

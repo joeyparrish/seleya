@@ -25,6 +25,7 @@ ttlMinutes: 10                   # optional, default 10
 syncConcurrency: 6               # optional, default 6
 bindAddress: 127.0.0.1           # optional, default 127.0.0.1
 port: 8080                       # optional, default 8080
+caseSensitive: false             # optional, default false
 forkAllowlist: []                # optional, default []
 tabs: [ ... ]                    # required, at least one
 ```
@@ -36,6 +37,7 @@ tabs: [ ... ]                    # required, at least one
 | `syncConcurrency` | positive integer | no | `6` | How many repositories to sync in parallel. |
 | `bindAddress` | string | no | `127.0.0.1` | Interface to bind. Do not change without external auth. |
 | `port` | positive integer | no | `8080` | Port to listen on. |
+| `caseSensitive` | boolean | no | `false` | When `false`, issue filters match case-insensitively (ASCII). See Filters. |
 | `forkAllowlist` | list of `owner/name` | no | `[]` | Forks to include despite the fork exclusion. |
 | `tabs` | list of tab | yes | | The ordered tabs (see below). At least one. |
 
@@ -94,6 +96,12 @@ with no filter.
 A filter is an object of conditions. **All conditions must match** (they are
 ANDed together). Only open issues and pull requests exist in Seleya, so there is
 no "state" condition.
+
+String comparisons (labels, assignee, author, milestone, issue type, and field
+names and values) are **case-insensitive by default**. Set the top-level
+`caseSensitive: true` to require exact case. (Folding is ASCII only.) Repository
+and organization name matching is always case-insensitive regardless of this
+setting.
 
 | Key | Type | Meaning |
 | --- | --- | --- |

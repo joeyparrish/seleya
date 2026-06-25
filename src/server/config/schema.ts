@@ -54,6 +54,7 @@ export const configSchema = z
     syncConcurrency: z.number().int().positive().default(6),
     bindAddress: z.string().default("127.0.0.1"),
     port: z.number().int().positive().default(8080),
+    caseSensitive: z.boolean().default(false),
     forkAllowlist: z.array(repoName).default([]),
     tabs: z.array(tabSchema).min(1),
   })

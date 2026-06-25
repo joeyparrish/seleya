@@ -6,6 +6,7 @@ ttlMinutes: 10                   # minutes before cached data is considered stal
 syncConcurrency: 6               # how many repos to sync in parallel
 bindAddress: 127.0.0.1           # do NOT expose publicly without external auth
 port: 7920
+caseSensitive: false             # filters match case-insensitively unless true
 
 forkAllowlist:
   - some-owner/a-fork-worth-keeping

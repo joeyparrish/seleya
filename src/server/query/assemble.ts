@@ -114,8 +114,9 @@ function buildGroup(
   filter: GroupFilter | undefined,
   repoIds: string[],
   now: Date,
+  caseSensitive: boolean,
 ): GroupView {
-  const { where, params } = compileFilter(filter, repoIds, now);
+  const { where, params } = compileFilter(filter, repoIds, now, caseSensitive);
   const rows = db
     .prepare(
       `SELECT issues.id, issues.number, issues.title, issues.is_pull_request, issues.state,
@@ -135,11 +136,14 @@ export function assembleTab(
   membership: TabMembership,
   tab: Tab,
   now: Date,
+  caseSensitive = false,
 ): TabView {
   const groups =
     tab.groups && tab.groups.length > 0
-      ? tab.groups.map((g) => buildGroup(db, g.name, g.filter, membership.repoIds, now))
-      : [buildGroup(db, "All open issues and PRs", undefined, membership.repoIds, now)];
+      ? tab.groups.map((g) =>
+          buildGroup(db, g.name, g.filter, membership.repoIds, now, caseSensitive),
+        )
+      : [buildGroup(db, "All open issues and PRs", undefined, membership.repoIds, now, caseSensitive)];
   return { name: tab.name, groups };
 }
 
@@ -149,7 +153,9 @@ export function assembleAllTabs(db: Database.Database, config: Config, now: Date
   config.tabs.forEach((tab, index) => {
     const repoIds = byName.get(tab.name) ?? [];
     if (repoIds.length === 0) return;
-    out.push(assembleTab(db, { position: index, tabName: tab.name, repoIds }, tab, now));
+    out.push(
+      assembleTab(db, { position: index, tabName: tab.name, repoIds }, tab, now, config.caseSensitive),
+    );
   });
   return out;
 }

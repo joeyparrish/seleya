@@ -13,6 +13,7 @@ const config: Config = {
   username: "o",
   ttlMinutes: 10,
   syncConcurrency: 6,
+  caseSensitive: false,
   bindAddress: "127.0.0.1",
   port: 8080,
   forkAllowlist: [],

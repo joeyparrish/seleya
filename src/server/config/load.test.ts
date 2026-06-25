@@ -30,6 +30,7 @@ describe("loadConfig", () => {
     expect(config.ttlMinutes).toBe(10);
     expect(config.bindAddress).toBe("127.0.0.1");
     expect(config.port).toBe(8080);
+    expect(config.caseSensitive).toBe(false);
     expect(config.forkAllowlist).toEqual([]);
     expect(config.tabs).toHaveLength(2);
     expect(token).toBe("tok");
