@@ -123,6 +123,25 @@ describe("syncStaleRepos", () => {
     for (const r of repos) expect(getSyncState(db, r.id)?.status).toBe("idle");
   });
 
+  it("invokes start/done callbacks once per due repo", async () => {
+    const db = openDatabase(":memory:");
+    const repos: RepoInfo[] = [
+      { id: "R_1", owner: "o", name: "a", isFork: false, isArchived: false },
+      { id: "R_2", owner: "o", name: "b", isFork: false, isArchived: false },
+    ];
+    for (const r of repos) upsertRepo(db, r);
+    const started: string[] = [];
+    const done: Array<[string, string | undefined]> = [];
+    await syncStaleRepos(db, fakeClient({}), repos, 10, {
+      force: true,
+      onRepoStart: (r) => started.push(r.id),
+      onRepoDone: (r, s) => done.push([r.id, s?.status]),
+    });
+    expect(started.sort()).toEqual(["R_1", "R_2"]);
+    expect(done.map(([id]) => id).sort()).toEqual(["R_1", "R_2"]);
+    expect(done.every(([, status]) => status === "idle")).toBe(true);
+  });
+
   it("skips fresh repos unless forced", async () => {
     const db = openDatabase(":memory:");
     upsertRepo(db, repo);

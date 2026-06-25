@@ -100,7 +100,14 @@ export async function syncStaleRepos(
   client: GitHubClient,
   repos: RepoInfo[],
   ttlMinutes: number,
-  opts?: { force?: boolean; now?: Date; concurrency?: number; rediscover?: boolean },
+  opts?: {
+    force?: boolean;
+    now?: Date;
+    concurrency?: number;
+    rediscover?: boolean;
+    onRepoStart?: (repo: RepoInfo) => void;
+    onRepoDone?: (repo: RepoInfo, state: SyncStateRow | undefined) => void;
+  },
 ): Promise<void> {
   const now = opts?.now ?? new Date();
   const due = repos.filter(
@@ -115,7 +122,9 @@ export async function syncStaleRepos(
   async function worker(): Promise<void> {
     while (next < due.length) {
       const repo = due[next++];
+      opts?.onRepoStart?.(repo);
       await syncRepo(db, client, repo, { now, rediscover: opts?.rediscover });
+      opts?.onRepoDone?.(repo, getSyncState(db, repo.id));
     }
   }
   await Promise.all(Array.from({ length: workerCount }, () => worker()));
