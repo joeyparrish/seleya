@@ -59,14 +59,16 @@ export async function resolveRepos(
   }
 
   // Make user repos available for explicit-spec resolution and catch-all.
-  for (const r of await getUser()) register(r);
+  const resolvedUserRepos = await getUser();
+  for (const r of resolvedUserRepos) register(r);
 
   // Second pass: finalize each tab (resolve explicit specs, compute catch-all).
   const tabs: ResolvedTab[] = [];
   for (let idx = 0; idx < config.tabs.length; idx++) {
     const tab = config.tabs[idx];
+    if (!tab) continue;
     const set = new Map<string, RepoInfo>();
-    for (const r of explicitTabRepos[idx]) set.set(r.id, r);
+    for (const r of explicitTabRepos[idx] ?? []) set.set(r.id, r);
 
     for (const rule of tab.match) {
       if ("repos" in rule) {
@@ -76,16 +78,18 @@ export async function resolveRepos(
             // Explicit repos that no org/user rule discovered must be fetched
             // directly — this is the not-related-by-an-org case.
             const [owner, name] = spec.split("/");
-            const fetched = await client.getRepo(owner, name);
-            if (fetched) {
-              register(fetched);
-              r = fetched;
+            if (owner && name) {
+              const fetched = await client.getRepo(owner, name);
+              if (fetched) {
+                register(fetched);
+                r = fetched;
+              }
             }
           }
           if (r && keep(r)) set.set(r.id, r);
         }
       } else if ("catchAll" in rule) {
-        for (const r of userRepos!) {
+        for (const r of resolvedUserRepos) {
           if (r.isArchived) continue; // archived repos are skipped in the catch-all
           if (!keep(r)) continue;
           if (claimed.has(key(r.owner, r.name))) continue;

@@ -35,8 +35,8 @@ describe("field store", () => {
     });
     const defs = listFieldDefinitions(db);
     expect(defs).toHaveLength(1);
-    expect(defs[0].name).toBe("Priority");
-    expect(defs[0].options.map((o) => o.name)).toEqual(["High", "Low"]);
+    expect(defs[0]?.name).toBe("Priority");
+    expect(defs[0]?.options.map((o) => o.name)).toEqual(["High", "Low"]);
   });
 
   it("replaces options on re-upsert", () => {
@@ -47,7 +47,7 @@ describe("field store", () => {
     });
     upsertFieldDefinition(db, def([{ id: "IFSSO_1", name: "High", color: null, position: 0 }]));
     upsertFieldDefinition(db, def([{ id: "IFSSO_2", name: "Low", color: null, position: 0 }]));
-    expect(listFieldDefinitions(db)[0].options.map((o) => o.name)).toEqual(["Low"]);
+    expect(listFieldDefinitions(db)[0]?.options.map((o) => o.name)).toEqual(["Low"]);
   });
 
   it("replaces issue field values and reads them back", () => {

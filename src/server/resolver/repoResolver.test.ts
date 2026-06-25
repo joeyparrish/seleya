@@ -52,7 +52,7 @@ describe("resolveRepos", () => {
         },
       }),
     );
-    expect(repos.tabs[0].repos.map((r) => r.name).sort()).toEqual(["keptfork", "lib"]);
+    expect(repos.tabs[0]?.repos.map((r) => r.name).sort()).toEqual(["keptfork", "lib"]);
   });
 
   it("unions mixed rules within one tab", async () => {
@@ -74,7 +74,7 @@ describe("resolveRepos", () => {
         user: [],
       }),
     );
-    expect(repos.tabs[0].repos.map((r) => r.id).sort()).toEqual(["R_1", "R_2"]);
+    expect(repos.tabs[0]?.repos.map((r) => r.id).sort()).toEqual(["R_1", "R_2"]);
   });
 
   it("computes catch-all as user repos not claimed by other tabs", async () => {

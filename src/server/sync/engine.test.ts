@@ -17,7 +17,7 @@ function fakeClient(over: Partial<GitHubClient>): GitHubClient {
     fetchIssuesUpdatedSince: async () => [],
     discoverIssueTypes: async () => [],
     discoverFields: async () => [],
-    getRepo: async (owner: string, name: string) => null,
+    getRepo: async () => null,
     ...over,
   };
 }
@@ -51,7 +51,7 @@ describe("syncRepo", () => {
     await syncRepo(db, client, repo, { now: new Date("2026-01-02T01:00:00Z") });
 
     expect(getIssue(db, "I_1")?.title).toBe("open");
-    expect(getFieldValues(db, "I_1")[0].valueText).toBe("High");
+    expect(getFieldValues(db, "I_1")[0]?.valueText).toBe("High");
     const state = getSyncState(db, "R_1");
     expect(state?.status).toBe("idle");
     expect(state?.lastSyncedAt).toBe("2026-01-02T01:00:00.000Z");

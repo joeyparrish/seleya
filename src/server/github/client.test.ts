@@ -95,12 +95,12 @@ describe("GitHubClient", () => {
     const issues = await client.fetchIssuesUpdatedSince("o", "n", "2026-01-02T00:00:00Z");
 
     expect(issues.map((i) => i.id)).toEqual(["I_2"]); // I_1 is at/under `since`
-    expect(issues[0].issueType).toEqual({ id: "IT_1", name: "Bug" });
-    expect(issues[0].fieldValues).toEqual([
+    expect(issues[0]?.issueType).toEqual({ id: "IT_1", name: "Bug" });
+    expect(issues[0]?.fieldValues).toEqual([
       { fieldName: "Priority", dataType: "single_select", valueText: "High", optionId: "IFSSO_1" },
     ]);
-    expect(issues[0].labels).toEqual(["bug"]);
-    expect(issues[0].assignees).toEqual(["bob"]);
+    expect(issues[0]?.labels).toEqual(["bug"]);
+    expect(issues[0]?.assignees).toEqual(["bob"]);
   });
 
   it("fetches a single repo by owner/name, returning null when absent", async () => {

@@ -138,6 +138,7 @@ export async function syncStaleRepos(
   async function worker(): Promise<void> {
     while (next < due.length) {
       const repo = due[next++];
+      if (!repo) break;
       opts?.onRepoStart?.(repo);
       await syncRepo(db, client, repo, { now, rediscover: opts?.rediscover });
       opts?.onRepoDone?.(repo, getSyncState(db, repo.id));

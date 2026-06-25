@@ -59,8 +59,8 @@ describe("assembleTab", () => {
   it("produces a single implicit group ordered by updated_at desc when no groups are configured", () => {
     const view = assembleTab(db, membership, tab({}), now);
     expect(view.groups).toHaveLength(1);
-    expect(view.groups[0].name).toBe("All open issues and PRs");
-    expect(view.groups[0].issues.map((i) => i.id)).toEqual(["I_2", "I_3", "I_1"]);
+    expect(view.groups[0]?.name).toBe("All open issues and PRs");
+    expect(view.groups[0]?.issues.map((i) => i.id)).toEqual(["I_2", "I_3", "I_1"]);
   });
 
   it("partitions issues across configured groups", () => {
@@ -75,20 +75,20 @@ describe("assembleTab", () => {
       }),
       now,
     );
-    expect(view.groups[0].issues.map((i) => i.id)).toEqual(["I_2"]);
-    expect(view.groups[1].issues.map((i) => i.id)).toEqual(["I_3", "I_1"]);
+    expect(view.groups[0]?.issues.map((i) => i.id)).toEqual(["I_2"]);
+    expect(view.groups[1]?.issues.map((i) => i.id)).toEqual(["I_3", "I_1"]);
   });
 
   it("builds issue and pull URLs", () => {
     const view = assembleTab(db, membership, tab({}), now);
-    const byId = Object.fromEntries(view.groups[0].issues.map((i) => [i.id, i.url]));
+    const byId = Object.fromEntries(view.groups[0]?.issues.map((i) => [i.id, i.url]) ?? []);
     expect(byId["I_1"]).toBe("https://github.com/o/n/issues/1");
     expect(byId["I_2"]).toBe("https://github.com/o/n/pull/2");
   });
 
   it("attaches field values with option colors", () => {
     const view = assembleTab(db, membership, tab({}), now);
-    const i1 = view.groups[0].issues.find((i) => i.id === "I_1")!;
+    const i1 = view.groups[0]!.issues.find((i) => i.id === "I_1")!;
     expect(i1.fields).toEqual([
       { name: "Priority", dataType: "single_select", value: "High", optionColor: "RED" },
     ]);
