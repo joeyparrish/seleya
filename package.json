@@ -7,18 +7,28 @@
   "engines": { "node": ">=20" },
   "bin": { "seleya": "dist/server/cli.js" },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && vite build",
+    "build:server": "tsc -p tsconfig.json",
+    "build:client": "vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:client": "tsc -p tsconfig.client.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "sync": "tsx src/server/cli.ts",
     "start": "tsx src/server/server.ts",
-    "dev": "tsx watch src/server/server.ts"
+    "dev": "tsx watch src/server/server.ts",
+    "dev:client": "vite"
   },
   "dependencies": {
+    "@mantine/core": "^9.0.0",
+    "@mantine/hooks": "^9.0.0",
     "@octokit/graphql": "^8.1.1",
+    "@tanstack/react-query": "^5.59.0",
+    "@tanstack/react-table": "^8.20.0",
     "better-sqlite3": "^11.3.0",
     "express": "^4.21.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "yaml": "^2.5.1",
     "zod": "^3.23.8"
   },
@@ -26,10 +36,14 @@
     "@types/better-sqlite3": "^7.6.11",
     "@types/express": "^4.17.21",
     "@types/node": "^22.5.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "@types/supertest": "^6.0.2",
+    "@vitejs/plugin-react": "^4.3.0",
     "supertest": "^7.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.6.2",
+    "vite": "^6.0.0",
     "vitest": "^2.1.1"
   }
 }
