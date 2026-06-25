@@ -59,7 +59,8 @@ export function createApp(deps: AppDeps): express.Express {
   });
 
   if (deps.clientDir) {
-    const clientDir = deps.clientDir;
+    // sendFile requires an absolute path, so resolve against cwd.
+    const clientDir = path.resolve(deps.clientDir);
     app.use(express.static(clientDir));
     app.get("*", (req, res, next) => {
       if (req.path.startsWith("/api/")) {
