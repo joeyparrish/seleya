@@ -112,7 +112,12 @@ incremental sync, since they change rarely.
   along with their field values, since Seleya only retains open items.
 - A periodic **deep refresh** (manual button, plus optional daily schedule)
   reconciles outright deletions and transfers by listing current open issues and
-  removing local rows that have vanished.
+  removing local rows that have vanished. It also removes repositories (and all
+  their issues) that have dropped out of the active match set, in particular a
+  repo that **used to be active and is now archived**: its issues are deleted,
+  the same way closed issues are deleted. (Incremental syncs cannot detect this,
+  because an archived repo is excluded from the match set and so is never synced
+  again.)
 
 The engine records per-repo sync state: last-synced timestamp, status
 (idle/syncing/error), and last error message.
