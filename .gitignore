@@ -1,12 +1,16 @@
+# Generated content
 node_modules/
 dist/
 *.tsbuildinfo
 
 # Local data and secrets (contain private repo data / credentials)
-*.sqlite
-*.sqlite-shm
-*.sqlite-wal
 seleya.db
+seleya.db-shm
+seleya.db-wal
 config.yaml
 .env
 secrets.*
+
+# Editor swap files
+*.sw*
+*~
