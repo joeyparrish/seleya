@@ -5,7 +5,7 @@ username: your-github-username   # used to compute the catch-all tab
 ttlMinutes: 10                   # global default staleness; per-tab override allowed
 syncConcurrency: 6               # how many repos to sync in parallel
 bindAddress: 127.0.0.1           # do NOT expose publicly without external auth
-port: 8080
+port: 7920
 
 forkAllowlist:
   - some-owner/a-fork-worth-keeping
