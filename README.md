@@ -26,7 +26,7 @@ The database file and any secrets file are gitignored.
 
 ## Quick start
 
-Requirements: Node.js 20 or newer.
+Requirements: Node.js 20.19+ or 22.12+ (per Vite 8).
 
 ```bash
 npm install
