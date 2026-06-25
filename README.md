@@ -21,6 +21,11 @@ Tailscale, a reverse proxy with authentication, a firewall, or an SSH tunnel).
 Do not expose Seleya to an untrusted network. The Personal Access Token and the
 local SQLite database both grant access to your private data.
 
+As a defense in depth, when bound to loopback Seleya rejects requests with a
+non-loopback `Host` header, which blocks DNS-rebinding attacks against the local
+server. To put it behind a reverse proxy or port-forward while still binding to
+loopback, list the public hostname in `allowedHosts` (see the config reference).
+
 The token is never stored in the config file. It is read from the environment.
 The database file and any secrets file are gitignored.
 
@@ -78,6 +83,7 @@ schema reference with filter recipes and a cheat sheet). Top-level keys:
 | `syncConcurrency` | How many repositories to sync in parallel (default 6). |
 | `bindAddress` | Network interface to bind (default `127.0.0.1`). |
 | `port` | Port to listen on. |
+| `allowedHosts` | Extra `Host` header names to allow behind a proxy when bound to loopback. |
 | `caseSensitive` | When false (the default), issue filters match case-insensitively. |
 | `forkAllowlist` | List of `owner/name` forks to include despite the fork exclusion. |
 | `tabs` | The ordered list of tabs (see below). |

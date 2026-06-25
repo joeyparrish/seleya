@@ -31,6 +31,7 @@ describe("loadConfig", () => {
     expect(config.bindAddress).toBe("127.0.0.1");
     expect(config.port).toBe(8080);
     expect(config.caseSensitive).toBe(false);
+    expect(config.allowedHosts).toEqual([]);
     expect(config.forkAllowlist).toEqual([]);
     expect(config.tabs).toHaveLength(2);
     expect(token).toBe("tok");

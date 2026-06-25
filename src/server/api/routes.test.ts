@@ -16,6 +16,7 @@ const config: Config = {
   caseSensitive: false,
   bindAddress: "127.0.0.1",
   port: 8080,
+  allowedHosts: [],
   forkAllowlist: [],
   tabs: [{ name: "Org", match: [{ org: "o" }] }],
 };
@@ -139,6 +140,40 @@ describe("API routes", () => {
     const running = makeRefresh({ stale: true, running: true });
     await request(createApp({ db, config, refresh: running.controller })).get("/api/tabs");
     expect(running.refresh).not.toHaveBeenCalled();
+  });
+
+  it("rejects a non-loopback Host header when bound to loopback (DNS rebinding)", async () => {
+    const db = openDatabase(":memory:");
+    seed(db);
+    const app = createApp({ db, config, refresh: makeRefresh().controller });
+
+    const evil = await request(app).get("/api/tabs").set("Host", "evil.example.com");
+    expect(evil.status).toBe(403);
+
+    const ok = await request(app).get("/api/tabs").set("Host", "localhost:7920");
+    expect(ok.status).toBe(200);
+  });
+
+  it("permits a configured allowedHosts entry while still bound to loopback", async () => {
+    const db = openDatabase(":memory:");
+    seed(db);
+    const proxied: Config = { ...config, allowedHosts: ["dashboard.example.com"] };
+    const app = createApp({ db, config: proxied, refresh: makeRefresh().controller });
+
+    const ok = await request(app).get("/api/tabs").set("Host", "dashboard.example.com");
+    expect(ok.status).toBe(200);
+    const evil = await request(app).get("/api/tabs").set("Host", "evil.example.com");
+    expect(evil.status).toBe(403);
+  });
+
+  it("does not enforce the Host header when bound to a non-loopback address", async () => {
+    const db = openDatabase(":memory:");
+    seed(db);
+    const publicConfig: Config = { ...config, bindAddress: "0.0.0.0" };
+    const app = createApp({ db, config: publicConfig, refresh: makeRefresh().controller });
+
+    const res = await request(app).get("/api/tabs").set("Host", "dashboard.example.com");
+    expect(res.status).toBe(200);
   });
 
   it("GET /api/tabs background-refreshes when no membership is persisted, even if fresh", async () => {

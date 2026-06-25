@@ -16,8 +16,37 @@ export interface AppDeps {
   now?: () => Date;
 }
 
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+
+function isLoopbackBind(addr: string): boolean {
+  return addr === "127.0.0.1" || addr === "::1" || addr === "localhost";
+}
+
 export function createApp(deps: AppDeps): express.Express {
   const app = express();
+
+  // When bound to loopback (the default), reject requests whose Host header is
+  // not a loopback name (or an operator-configured allowedHosts entry). This
+  // blocks DNS-rebinding attacks, where a site the operator visits rebinds its
+  // hostname to 127.0.0.1 to read private data as same-origin. To expose Seleya
+  // through a reverse proxy or port-forward while still binding loopback, add the
+  // public hostname to `allowedHosts`. Non-loopback binds (intentional public
+  // deployments) skip this entirely.
+  if (isLoopbackBind(deps.config.bindAddress)) {
+    const allowed = new Set([
+      ...LOOPBACK_HOSTS,
+      ...deps.config.allowedHosts.map((h) => h.toLowerCase()),
+    ]);
+    app.use((req, res, next) => {
+      const hostname = (req.headers.host ?? "").replace(/:\d+$/, "").toLowerCase();
+      if (allowed.has(hostname)) {
+        next();
+      } else {
+        res.status(403).type("text/plain").send("Forbidden: unexpected Host header");
+      }
+    });
+  }
+
   app.use(express.json());
   const now = deps.now ?? (() => new Date());
 

@@ -33,6 +33,7 @@ function makeConfig(over: Partial<Config>): Config {
     caseSensitive: false,
     bindAddress: "127.0.0.1",
     port: 8080,
+    allowedHosts: [],
     forkAllowlist: [],
     tabs: [],
     ...over,
