@@ -58,7 +58,7 @@ export const configSchema = z
     ttlMinutes: z.number().int().positive().default(10),
     syncConcurrency: z.number().int().positive().default(6),
     bindAddress: z.string().default("127.0.0.1"),
-    port: z.number().int().positive().default(8080),
+    port: z.number().int().positive().default(7920),
     allowedHosts: z.array(z.string()).default([]),
     caseSensitive: z.boolean().default(false),
     forkAllowlist: z.array(repoName).default([]),

@@ -24,7 +24,7 @@ username: your-github-login      # required
 ttlMinutes: 10                   # optional, default 10
 syncConcurrency: 6               # optional, default 6
 bindAddress: 127.0.0.1           # optional, default 127.0.0.1
-port: 8080                       # optional, default 8080
+port: 7920                       # optional, default 7920
 allowedHosts: []                 # optional, default []
 caseSensitive: false             # optional, default false
 forkAllowlist: []                # optional, default []
@@ -37,7 +37,7 @@ tabs: [ ... ]                    # required, at least one
 | `ttlMinutes` | positive integer | no | `10` | Minutes before cached data is considered stale. |
 | `syncConcurrency` | positive integer | no | `6` | How many repositories to sync in parallel. |
 | `bindAddress` | string | no | `127.0.0.1` | Interface to bind. Do not change without external auth. |
-| `port` | positive integer | no | `8080` | Port to listen on. |
+| `port` | positive integer | no | `7920` | Port to listen on. |
 | `allowedHosts` | list of string | no | `[]` | Extra `Host` header names allowed when bound to loopback (see below). |
 | `caseSensitive` | boolean | no | `false` | When `false`, issue filters match case-insensitively (ASCII). See Filters. |
 | `forkAllowlist` | list of `owner/name` | no | `[]` | Forks to include despite the fork exclusion. |

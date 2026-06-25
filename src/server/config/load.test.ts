@@ -29,7 +29,7 @@ describe("loadConfig", () => {
     expect(config.username).toBe("octocat");
     expect(config.ttlMinutes).toBe(10);
     expect(config.bindAddress).toBe("127.0.0.1");
-    expect(config.port).toBe(8080);
+    expect(config.port).toBe(7920);
     expect(config.caseSensitive).toBe(false);
     expect(config.allowedHosts).toEqual([]);
     expect(config.forkAllowlist).toEqual([]);
@@ -58,5 +58,30 @@ describe("loadConfig", () => {
       `username: octocat\ntabs:\n  - name: T\n    match:\n      - repos: ["notslashed"]\n`,
     );
     expect(() => loadConfig({ path, env: { GITHUB_TOKEN: "tok" } })).toThrow();
+  });
+
+  it("reads inline config from SELEYA_CONFIG_YAML without a file", () => {
+    const { config } = loadConfig({
+      env: { GITHUB_TOKEN: "tok", SELEYA_CONFIG_YAML: valid },
+    });
+    expect(config.username).toBe("octocat");
+    expect(config.tabs).toHaveLength(2);
+  });
+
+  it("applies PORT and SELEYA_BIND_ADDRESS overrides", () => {
+    const path = writeConfig(valid);
+    const { config } = loadConfig({
+      path,
+      env: { GITHUB_TOKEN: "tok", PORT: "3000", SELEYA_BIND_ADDRESS: "0.0.0.0" },
+    });
+    expect(config.port).toBe(3000);
+    expect(config.bindAddress).toBe("0.0.0.0");
+  });
+
+  it("throws on an invalid PORT", () => {
+    const path = writeConfig(valid);
+    expect(() =>
+      loadConfig({ path, env: { GITHUB_TOKEN: "tok", PORT: "notanumber" } }),
+    ).toThrow(/PORT/);
   });
 });
