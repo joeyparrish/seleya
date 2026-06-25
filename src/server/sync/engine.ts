@@ -40,6 +40,38 @@ function toRecord(repoId: string, f: FetchedIssue): IssueRecord {
   };
 }
 
+/**
+ * Applies a batch of fetched items to the store: open items are upserted (with
+ * their type and field values), non-open items are deleted. Returns the set of
+ * open issue ids seen, which the deep-refresh reconciler uses to detect local
+ * issues that have vanished upstream.
+ */
+export function applyFetchedIssues(
+  db: Database.Database,
+  repoId: string,
+  fetched: FetchedIssue[],
+): Set<string> {
+  const openIds = new Set<string>();
+  for (const f of fetched) {
+    if (f.state === "OPEN") {
+      if (f.issueType) {
+        upsertIssueType(db, {
+          id: f.issueType.id,
+          name: f.issueType.name,
+          color: null,
+          description: null,
+        });
+      }
+      upsertIssue(db, toRecord(repoId, f));
+      setIssueFieldValues(db, f.id, f.fieldValues as IssueFieldValue[]);
+      openIds.add(f.id);
+    } else {
+      deleteIssue(db, f.id);
+    }
+  }
+  return openIds;
+}
+
 export async function syncRepo(
   db: Database.Database,
   client: GitHubClient,
@@ -64,23 +96,7 @@ export async function syncRepo(
     }
 
     const fetched = await client.fetchIssuesUpdatedSince(repo.owner, repo.name, since);
-
-    for (const f of fetched) {
-      if (f.state === "OPEN") {
-        if (f.issueType) {
-          upsertIssueType(db, {
-            id: f.issueType.id,
-            name: f.issueType.name,
-            color: null,
-            description: null,
-          });
-        }
-        upsertIssue(db, toRecord(repo.id, f));
-        setIssueFieldValues(db, f.id, f.fieldValues as IssueFieldValue[]);
-      } else {
-        deleteIssue(db, f.id);
-      }
-    }
+    applyFetchedIssues(db, repo.id, fetched);
 
     setSyncState(db, repo.id, {
       status: "idle",

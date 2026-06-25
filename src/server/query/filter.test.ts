@@ -31,8 +31,8 @@ let db: Database.Database;
 
 beforeEach(() => {
   db = openDatabase(":memory:");
-  upsertRepo(db, { id: "R_1", owner: "o", name: "n", isFork: false, isArchived: false });
-  upsertRepo(db, { id: "R_2", owner: "o", name: "m", isFork: false, isArchived: false });
+  upsertRepo(db, { id: "R_1", owner: "o", name: "n", isFork: false });
+  upsertRepo(db, { id: "R_2", owner: "o", name: "m", isFork: false });
 
   upsertIssue(
     db,

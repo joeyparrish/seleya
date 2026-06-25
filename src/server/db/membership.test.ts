@@ -5,7 +5,7 @@ import { replaceTabMemberships, listTabMemberships } from "./membership.js";
 
 function seed(db: ReturnType<typeof openDatabase>) {
   for (const id of ["R_1", "R_2", "R_3"]) {
-    upsertRepo(db, { id, owner: "o", name: id, isFork: false, isArchived: false });
+    upsertRepo(db, { id, owner: "o", name: id, isFork: false });
   }
 }
 

@@ -37,6 +37,10 @@ export function getRepo(
   return row ? toRow(row) : undefined;
 }
 
+export function deleteRepo(db: Database.Database, id: string): void {
+  db.prepare("DELETE FROM repos WHERE id=?").run(id);
+}
+
 export function listRepos(db: Database.Database): RepoRow[] {
   const rows = db
     .prepare("SELECT id, owner, name, is_fork FROM repos ORDER BY owner, name")
