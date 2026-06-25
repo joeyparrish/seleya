@@ -8,7 +8,7 @@ import { isStale, syncRepo, syncStaleRepos } from "./engine.js";
 import type { GitHubClient } from "../github/client.js";
 import type { FetchedIssue, RepoInfo } from "../github/types.js";
 
-const repo: RepoInfo = { id: "R_1", owner: "o", name: "n", isFork: false };
+const repo: RepoInfo = { id: "R_1", owner: "o", name: "n", isFork: false, isArchived: false };
 
 function fakeClient(over: Partial<GitHubClient>): GitHubClient {
   return {

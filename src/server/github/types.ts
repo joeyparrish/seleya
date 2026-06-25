@@ -10,6 +10,7 @@ export interface RepoInfo {
   owner: string;
   name: string;
   isFork: boolean;
+  isArchived: boolean;
 }
 
 export interface FetchedFieldValue {

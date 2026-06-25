@@ -45,6 +45,7 @@ export async function resolveRepos(
       if ("org" in rule) {
         for (const r of await getOrg(rule.org)) {
           register(r);
+          if (r.isArchived) continue; // archived repos are skipped in org/wildcard matches
           if (keep(r)) {
             set.set(r.id, r);
             claimed.add(key(r.owner, r.name));
@@ -85,6 +86,7 @@ export async function resolveRepos(
         }
       } else if ("catchAll" in rule) {
         for (const r of userRepos!) {
+          if (r.isArchived) continue; // archived repos are skipped in the catch-all
           if (!keep(r)) continue;
           if (claimed.has(key(r.owner, r.name))) continue;
           set.set(r.id, r);

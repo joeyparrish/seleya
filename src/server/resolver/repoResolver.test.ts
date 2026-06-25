@@ -3,6 +3,15 @@ import { resolveRepos } from "./repoResolver.js";
 import type { RepoInfo } from "../github/types.js";
 import type { Config } from "../config/schema.js";
 
+function repo(
+  id: string,
+  owner: string,
+  name: string,
+  flags: { isFork?: boolean; isArchived?: boolean } = {},
+): RepoInfo {
+  return { id, owner, name, isFork: flags.isFork ?? false, isArchived: flags.isArchived ?? false };
+}
+
 function client(data: { orgs?: Record<string, RepoInfo[]>; user?: RepoInfo[] }) {
   const all = [...Object.values(data.orgs ?? {}).flat(), ...(data.user ?? [])];
   return {
@@ -34,9 +43,9 @@ describe("resolveRepos", () => {
       client({
         orgs: {
           org: [
-            { id: "R_1", owner: "org", name: "lib", isFork: false },
-            { id: "R_2", owner: "org", name: "droppedfork", isFork: true },
-            { id: "R_3", owner: "org", name: "keptfork", isFork: true },
+            repo("R_1", "org", "lib"),
+            repo("R_2", "org", "droppedfork", { isFork: true }),
+            repo("R_3", "org", "keptfork", { isFork: true }),
           ],
         },
       }),
@@ -57,11 +66,8 @@ describe("resolveRepos", () => {
       c,
       client({
         orgs: {
-          org1: [{ id: "R_1", owner: "org1", name: "a", isFork: false }],
-          org2: [
-            { id: "R_2", owner: "org2", name: "foo", isFork: false },
-            { id: "R_3", owner: "org2", name: "bar", isFork: false },
-          ],
+          org1: [repo("R_1", "org1", "a")],
+          org2: [repo("R_2", "org2", "foo"), repo("R_3", "org2", "bar")],
         },
         user: [],
       }),
@@ -79,11 +85,8 @@ describe("resolveRepos", () => {
     const repos = await resolveRepos(
       c,
       client({
-        orgs: { org: [{ id: "R_1", owner: "org", name: "lib", isFork: false }] },
-        user: [
-          { id: "R_2", owner: "octocat", name: "dotfiles", isFork: false },
-          { id: "R_1", owner: "org", name: "lib", isFork: false },
-        ],
+        orgs: { org: [repo("R_1", "org", "lib")] },
+        user: [repo("R_2", "octocat", "dotfiles"), repo("R_1", "org", "lib")],
       }),
     );
     const personal = repos.tabs.find((t) => t.name === "Personal")!;
@@ -100,10 +103,37 @@ describe("resolveRepos", () => {
     const repos = await resolveRepos(
       c,
       client({
-        orgs: { org: [{ id: "R_1", owner: "org", name: "lib", isFork: false }] },
-        user: [{ id: "R_1", owner: "org", name: "lib", isFork: false }],
+        orgs: { org: [repo("R_1", "org", "lib")] },
+        user: [repo("R_1", "org", "lib")],
       }),
     );
     expect(repos.tabs.map((t) => t.name)).toEqual(["Org"]);
+  });
+
+  it("skips archived repos in org and catch-all matches but keeps them when named explicitly", async () => {
+    const c = cfg({
+      tabs: [
+        { name: "Org", match: [{ org: "org" }] },
+        { name: "Explicit", match: [{ repos: ["org/oldlib"] }] },
+        { name: "Personal", match: [{ catchAll: true }] },
+      ],
+    });
+    const repos = await resolveRepos(
+      c,
+      client({
+        orgs: {
+          org: [repo("R_1", "org", "lib"), repo("R_2", "org", "oldlib", { isArchived: true })],
+        },
+        user: [repo("R_3", "octocat", "active"), repo("R_4", "octocat", "retired", { isArchived: true })],
+      }),
+    );
+    const org = repos.tabs.find((t) => t.name === "Org")!;
+    expect(org.repos.map((r) => r.id)).toEqual(["R_1"]); // archived R_2 skipped
+
+    const explicit = repos.tabs.find((t) => t.name === "Explicit")!;
+    expect(explicit.repos.map((r) => r.id)).toEqual(["R_2"]); // archived but named explicitly
+
+    const personal = repos.tabs.find((t) => t.name === "Personal")!;
+    expect(personal.repos.map((r) => r.id)).toEqual(["R_3"]); // archived R_4 skipped
   });
 });

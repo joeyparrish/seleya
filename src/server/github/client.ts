@@ -44,7 +44,7 @@ export function createDefaultRequest(token: string): GraphQLRequest {
   return ((query, variables) => authed(query, variables)) as GraphQLRequest;
 }
 
-const REPO_FIELDS = `nodes { id name isFork owner { login } } pageInfo { hasNextPage endCursor }`;
+const REPO_FIELDS = `nodes { id name isFork isArchived owner { login } } pageInfo { hasNextPage endCursor }`;
 
 const ISSUE_NODE = `
   id number title state createdAt updatedAt
@@ -77,8 +77,14 @@ interface Page<T> {
   pageInfo: { hasNextPage: boolean; endCursor: string | null };
 }
 
-function mapRepo(n: { id: string; name: string; isFork: boolean; owner: { login: string } }): RepoInfo {
-  return { id: n.id, owner: n.owner.login, name: n.name, isFork: n.isFork };
+function mapRepo(n: {
+  id: string;
+  name: string;
+  isFork: boolean;
+  isArchived: boolean;
+  owner: { login: string };
+}): RepoInfo {
+  return { id: n.id, owner: n.owner.login, name: n.name, isFork: n.isFork, isArchived: n.isArchived };
 }
 
 function mapFieldValues(nodes: any[]): FetchedFieldValue[] {
@@ -185,7 +191,7 @@ export function createGitHubClient(request: GraphQLRequest): GitHubClient {
     async getRepo(owner, name) {
       const data = await request<any>(
         `query($owner:String!,$name:String!){
-          repository(owner:$owner,name:$name){ id name isFork owner { login } }
+          repository(owner:$owner,name:$name){ id name isFork isArchived owner { login } }
         }`,
         { owner, name },
       );

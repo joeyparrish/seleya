@@ -7,7 +7,7 @@ describe("GitHubClient", () => {
       {
         organization: {
           repositories: {
-            nodes: [{ id: "R_1", name: "a", isFork: false, owner: { login: "org" } }],
+            nodes: [{ id: "R_1", name: "a", isFork: false, isArchived: false, owner: { login: "org" } }],
             pageInfo: { hasNextPage: true, endCursor: "c1" },
           },
         },
@@ -15,7 +15,7 @@ describe("GitHubClient", () => {
       {
         organization: {
           repositories: {
-            nodes: [{ id: "R_2", name: "b", isFork: true, owner: { login: "org" } }],
+            nodes: [{ id: "R_2", name: "b", isFork: true, isArchived: false, owner: { login: "org" } }],
             pageInfo: { hasNextPage: false, endCursor: null },
           },
         },
@@ -28,8 +28,8 @@ describe("GitHubClient", () => {
     const client = createGitHubClient(request);
     const repos = await client.listOrgRepos("org");
     expect(repos).toEqual([
-      { id: "R_1", owner: "org", name: "a", isFork: false },
-      { id: "R_2", owner: "org", name: "b", isFork: true },
+      { id: "R_1", owner: "org", name: "a", isFork: false, isArchived: false },
+      { id: "R_2", owner: "org", name: "b", isFork: true, isArchived: false },
     ]);
   });
 
@@ -105,7 +105,7 @@ describe("GitHubClient", () => {
 
   it("fetches a single repo by owner/name, returning null when absent", async () => {
     const present = vi.fn(async () => ({
-      repository: { id: "R_9", name: "foo", isFork: false, owner: { login: "acme" } },
+      repository: { id: "R_9", name: "foo", isFork: false, isArchived: false, owner: { login: "acme" } },
     })) as unknown as GraphQLRequest;
     const client = createGitHubClient(present);
     expect(await client.getRepo("acme", "foo")).toEqual({
@@ -113,6 +113,7 @@ describe("GitHubClient", () => {
       owner: "acme",
       name: "foo",
       isFork: false,
+      isArchived: false,
     });
 
     const absent = vi.fn(async () => ({ repository: null })) as unknown as GraphQLRequest;
