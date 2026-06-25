@@ -93,96 +93,128 @@ with no filter.
 
 ## Filters
 
-A filter is an object of conditions. **All conditions must match** (they are
-ANDed together). Only open issues and pull requests exist in Seleya, so there is
-no "state" condition.
+A filter is an object of **dimensions**, all ANDed together (every dimension
+present must match). `type` is a plain enum; every other dimension is a
+**matcher** (or a list of matchers). Only open issues and pull requests exist in
+Seleya, so there is no "state" dimension.
 
-String comparisons (labels, assignee, author, milestone, issue type, and field
-names and values) are **case-insensitive by default**. Set the top-level
-`caseSensitive: true` to require exact case. (Folding is ASCII only.) Repository
-and organization name matching is always case-insensitive regardless of this
-setting.
+| Dimension | Kind | Matched against |
+| --- | --- | --- |
+| `type` | enum `issue` \| `pull_request` | Issue vs pull request (not a matcher). |
+| `labels` | matcher(s), set | The issue's labels. |
+| `assignee` | matcher(s), set | The issue's assignees. |
+| `author` | matcher(s), scalar | The author login. |
+| `milestone` | matcher(s), scalar | The milestone title. |
+| `issueType` | matcher(s), scalar | The beta issue Type name. |
+| `age` | matcher(s), numeric | The issue's age in days (numeric operators only). |
+| `fields` | list of field matchers | Beta custom Fields, by name (see below). |
+
+### Matchers: one object or a list
+
+Every matcher dimension (everything except `type` and `fields`) accepts
+**either a single matcher object or a list of matcher objects**. Both forms are
+valid and mean different things, so this is worth calling out explicitly:
+
+```yaml
+author: { like: '%bot%' }     # object form: one matcher
+
+labels:                       # list form: several matchers
+  - include: [security]
+  - exclude: [frontend]
+```
+
+A **list is ANDed**: every matcher in it must hold. Within a single matcher, the
+keys present are also ANDed. So you express OR with `include` inside one matcher,
+and AND with multiple matchers in a list.
+
+A matcher has these optional keys:
 
 | Key | Type | Meaning |
 | --- | --- | --- |
-| `labelsInclude` | list of string | Issue must have **all** of these labels. |
-| `labelsExclude` | list of string | Issue must have **none** of these labels. |
-| `type` | `issue` or `pull_request` | Restrict to issues or to pull requests. |
-| `assignee` | string | Exact assignee login (the issue must have this assignee). |
-| `author` | string | Exact author login. |
-| `milestone` | string | Exact milestone title. |
-| `ageDays` | `{ op, value }` | Compare the issue's age in days (see operators). |
-| `issueType` | list of string | Issue's beta Type name is **one of** these (e.g. `Bug`). |
-| `fields` | list of field filter | Conditions on beta custom Fields (see below). |
+| `include` | list of string | The value is **any of** these (OR). |
+| `exclude` | list of string | The value is **none of** these. A missing value also matches. |
+| `is` | string | Exact equality (same as `include` with one item). |
+| `like` | string | SQL `LIKE` pattern (`%` and `_`). Always case-insensitive. |
+| `set` | boolean | Has a value (`true`) or has no value (`false`). |
+| `gt` `gte` `lt` `lte` | number | Numeric comparison (number fields and `age`). |
 
-Notes:
+`include`, `exclude`, and `is` are case-insensitive by default; set the
+top-level `caseSensitive: true` for exact case. `like` is always
+case-insensitive (ASCII folding only). Repository and organization name matching
+is always case-insensitive regardless of this setting.
 
-- `labelsInclude` is an AND across the listed labels; `labelsExclude` removes an
-  issue if it carries any one of the listed labels.
-- `issueType` is an OR: the issue matches if its Type is any name in the list.
-- `assignee`, `author`, and `milestone` are exact, single-value matches. There is
-  no built-in "unassigned" or "no milestone" condition yet.
+For **set dimensions** (`labels`, `assignee`), `include` means "has any of
+these", `exclude` means "has none of these", and `set: false` means "has none at
+all" (so `assignee: { set: false }` is unassigned). For **scalar dimensions**
+(`author`, `milestone`, `issueType`), the matcher tests the single value, and
+`set: false` means the value is absent (e.g. no milestone). For **`age`**, only
+the numeric operators apply.
 
-### Field filters
+### Field matchers
 
-Each entry in `fields` targets one beta custom Field by `name` and is matched
-**by field name across organizations**: a `Priority` condition applies wherever a
-`Priority` field exists. Issues in organizations that do not define the field do
-not match `in` or numeric conditions, and do match `notIn` and `unset: true`.
+Each entry in `fields` is a matcher plus a required `name`, targeting one beta
+custom Field. Fields are matched **by name across organizations**: a `Priority`
+condition applies wherever a `Priority` field exists. Issues in organizations
+that do not define the field have no value for it, so they do not match
+`include`, `is`, or numeric conditions, and they do match `exclude` and
+`set: false`.
 
 ```yaml
 fields:
-  - name: Priority               # required: the field name
-    in: [High, Critical]         # select/text fields: value is one of these
-  - name: Status                 # select/text fields:
-    notIn: [Done, Closed]        #   value is none of these
-  - name: Effort                 # number fields:
-    op: ">="                     #   one of > >= < <= = !=
-    value: 3
-  - name: Target date            # any field:
-    unset: true                  #   the issue has no value for this field
+  - name: Priority             # required
+    include: [High, Critical]  # select/text: value is any of these
+    exclude: [Deferred]        #   and none of these
+  - name: Effort               # number field:
+    gte: 3                     #   numeric comparison
+  - name: Department           # any field:
+    set: false                 #   the issue has no value for this field
 ```
 
-| Key | Type | Applies to | Meaning |
-| --- | --- | --- | --- |
-| `name` | string | required | The field's name. |
-| `in` | list of string | single/multi-select, text | Field value is one of these. |
-| `notIn` | list of string | single/multi-select, text | Field value is none of these. Issues with no value for the field also match. |
-| `op` + `value` | operator + number | number fields | Numeric comparison against `value`. |
-| `unset` | `true` | any field | The issue has no value set for this field. |
-
-Within one field filter you may combine keys (for example `name` + `in`), and
-they are ANDed. Use separate entries for separate fields.
+By data type: `include` / `exclude` / `is` / `like` apply to single-select,
+multi-select, and text fields (they compare the text value); `gt` / `gte` / `lt`
+/ `lte` apply to number fields; `set` applies to any field. Multiple keys in one
+field entry are ANDed; list the same field name twice to AND separate clauses.
 
 ## Operators
 
-Two condition types take operators, and their allowed sets differ:
-
-- `ageDays.op`: one of `>` `>=` `<` `<=`. (No `=` or `!=`.)
-  Age grows as the issue gets older, so `{ op: ">=", value: 7 }` means "at least
-  7 days old".
-- field filter `op`: one of `>` `>=` `<` `<=` `=` `!=`.
+- String operators (`include`, `exclude`, `is`): membership or equality,
+  case-insensitive unless `caseSensitive: true`.
+- `like`: SQL `LIKE` with `%` (any run of characters) and `_` (any one
+  character), always case-insensitive.
+- Numeric operators (`gt`, `gte`, `lt`, `lte`): apply to number fields and to
+  `age`. For `age` the value is days and larger means older, so `age: { gte: 7 }`
+  means "at least 7 days old".
 
 ## Recipes
 
-Untriaged issues (issues without a `triaged` label):
+Untriaged issues (no `triaged` label):
 
 ```yaml
 - name: Needs triage
   filter:
     type: issue
-    labelsExclude: [triaged]
+    labels: { exclude: [triaged] }
 ```
 
-High or critical priority pull requests:
+Dependabot and other bots:
 
 ```yaml
-- name: Hot PRs
+- name: Bots
   filter:
     type: pull_request
+    author: { like: '%bot%' }
+```
+
+Unassigned, high-or-critical priority issues:
+
+```yaml
+- name: Grab these
+  filter:
+    type: issue
+    assignee: { set: false }
     fields:
       - name: Priority
-        in: [High, Critical]
+        include: [High, Critical]
 ```
 
 Bugs older than 30 days:
@@ -190,53 +222,57 @@ Bugs older than 30 days:
 ```yaml
 - name: Aging bugs
   filter:
-    issueType: [Bug]
-    ageDays: { op: ">=", value: 30 }
+    issueType: { include: [Bug] }
+    age: { gte: 30 }
 ```
 
-Large-effort issues with a priority still unset:
+Issues with both `security` and `UX` labels but not `frontend` (AND via a list):
+
+```yaml
+- name: Security UX
+  filter:
+    labels:
+      - include: [security]
+      - include: [UX]
+      - exclude: [frontend]
+```
+
+Large-effort issues whose priority is still unset:
 
 ```yaml
 - name: Size it
   filter:
-    type: issue
     fields:
       - name: Effort
-        op: ">="
-        value: 5
+        gte: 5
       - name: Priority
-        unset: true
-```
-
-Everything by a specific author with two required labels:
-
-```yaml
-- name: Alice's regressions
-  filter:
-    author: alice
-    labelsInclude: [bug, regression]
+        set: false
 ```
 
 ## Cheat sheet
 
 ```yaml
 filter:
-  labelsInclude: [a, b]          # has all of these labels
-  labelsExclude: [c, d]          # has none of these labels
-  type: issue                    # or: pull_request
-  assignee: somelogin            # exact
-  author: somelogin              # exact
-  milestone: "v1.0"              # exact
-  ageDays: { op: ">=", value: 7 }   # op: > >= < <=
-  issueType: [Bug, Task]         # type name is one of these
+  type: issue                  # or: pull_request (not a matcher)
+
+  # Every dimension below is a matcher OR a list of matchers (a list is ANDed).
+  labels:    { include: [a, b], exclude: [c] }   # set: any-of / none-of
+  assignee:  { set: false }                      # unassigned
+  author:    { like: '%bot%' }                   # fuzzy
+  milestone: { is: "v1.0" }                      # exact
+  issueType: { include: [Bug, Task] }            # any-of
+  age:       { gte: 7 }                          # at least 7 days old
+
   fields:
     - name: Priority
-      in: [High]                 # select/text: value in list
-    - name: Status
-      notIn: [Done]              # select/text: value not in list
+      include: [High]          # select/text: value in list
+      exclude: [Low]           #   and not in list
     - name: Effort
-      op: ">="                   # number: > >= < <= = !=
-      value: 3
-    - name: Priority
-      unset: true                # no value for this field
+      gte: 3                   # number: gt gte lt lte
+    - name: Department
+      set: false               # no value for this field
+
+# Matcher keys (all optional, ANDed):
+#   include: [str]   exclude: [str]   is: str   like: str
+#   set: bool        gt | gte | lt | lte: number
 ```

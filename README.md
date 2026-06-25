@@ -112,21 +112,27 @@ does not reassign the repository to another tab.
 Within a tab, `groups` partitions issues into named, collapsible sections. A tab
 with no groups shows a single section with all open issues and pull requests.
 
-Each group has a `name` and an optional `filter` with any of these conditions
-(all conditions must match):
+Each group has a `name` and an optional `filter`. A filter is a set of
+dimensions (all ANDed): `type` (`issue` or `pull_request`), and the matcher
+dimensions `labels`, `assignee`, `author`, `milestone`, `issueType`, `age`, and
+`fields`. Each matcher dimension takes one matcher object or a list of them (a
+list is ANDed), and a matcher combines optional keys: `include` / `exclude`
+(any-of / none-of), `is` (exact), `like` (SQL `LIKE`), `set` (true/false), and
+`gt` / `gte` / `lt` / `lte` (numeric, for number fields and `age`).
 
-- `labelsInclude` / `labelsExclude`: lists of label names.
-- `type`: `issue` or `pull_request`.
-- `assignee`, `author`, `milestone`: exact names.
-- `ageDays`: `{ op: ">=" , value: 7 }` style comparison on issue age in days.
-- `issueType`: list of issue Type names (e.g. `Bug`, `Task`).
-- `fields`: list of custom Field conditions, each with a `name` and one of
-  `in: [Value, ...]` (select fields), `op` and `value` (number fields), or
-  `unset: true` (issues with no value for that field).
+```yaml
+filter:
+  type: issue
+  labels: { exclude: [triaged] }
+  author: { like: '%bot%' }
+  fields:
+    - name: Priority
+      include: [High, Critical]
+```
 
-Custom Fields are matched by name across organizations, so a `Priority` filter
-applies wherever a `Priority` field exists. Issues in organizations without that
-field simply do not match an `in` condition (and do match `unset: true`).
+String matching is case-insensitive by default (`like` always is). See
+[docs/config-reference.md](docs/config-reference.md) for the complete matcher
+reference, operator details, and recipes.
 
 ## How refreshing works
 

@@ -18,15 +18,27 @@ tabs:
     exclude:                       # remove specific repos from this tab
       - shaka-project/some-archived-helper
     groups:
+      # Each filter dimension takes EITHER one matcher (an object) OR a list of
+      # matchers. A list is ANDed: every matcher must hold. Both forms are valid;
+      # use a list when you need AND. Within a matcher, include is "any of".
       - name: Needs triage
         filter:
-          labelsExclude: [triaged]
           type: issue
+          labels: { exclude: [triaged] }          # object form: a single matcher
+      - name: Security, not frontend
+        filter:
+          labels:                                  # list form: matchers are ANDed
+            - include: [security, UX]              #   has security or UX
+            - exclude: [frontend]                  #   and not frontend
       - name: High priority
         filter:
           fields:
             - name: Priority
-              in: [High, Critical]
+              include: [High, Critical]
+      - name: Dependabot
+        filter:
+          type: pull_request
+          author: { like: '%bot%' }
 
   - name: Mixed
     match:

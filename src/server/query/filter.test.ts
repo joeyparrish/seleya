@@ -5,6 +5,7 @@ import { upsertRepo } from "../db/repos.js";
 import { upsertIssue, type IssueRecord } from "../db/issues.js";
 import { setIssueFieldValues } from "../db/fields.js";
 import { compileFilter, type CompiledFilter } from "./filter.js";
+import type { GroupFilter } from "../config/schema.js";
 
 const now = new Date("2026-06-24T00:00:00Z");
 
@@ -40,15 +41,26 @@ beforeEach(() => {
       id: "I_1",
       repoId: "R_1",
       labels: ["bug", "triaged"],
-      assignees: ["alice"],
-      author: "bob",
+      assignees: ["alice", "bob"],
+      author: "Octocat",
       milestone: "v1",
       issueTypeName: "Bug",
       createdAt: "2026-06-01T00:00:00Z", // 23 days old
     }),
   );
-  upsertIssue(db, issue({ id: "I_2", repoId: "R_1", isPullRequest: true, author: "carol" }));
-  upsertIssue(db, issue({ id: "I_3", repoId: "R_2", labels: ["bug"] }));
+  upsertIssue(db, issue({ id: "I_2", repoId: "R_1", isPullRequest: true, author: "dependabot" }));
+  upsertIssue(
+    db,
+    issue({
+      id: "I_3",
+      repoId: "R_2",
+      labels: ["bug"],
+      assignees: ["carol"],
+      author: "alice",
+      milestone: "v2",
+      issueTypeName: "Task",
+    }),
+  );
 
   setIssueFieldValues(db, "I_1", [
     { fieldName: "Priority", dataType: "single_select", valueText: "High", optionId: "IFSSO_1" },
@@ -59,6 +71,8 @@ beforeEach(() => {
   ]);
 });
 
+const ALL = ["R_1", "R_2"];
+
 function ids(cf: CompiledFilter): string[] {
   return (
     db.prepare(`SELECT id FROM issues WHERE ${cf.where} ORDER BY id`).all(...cf.params) as Array<{
@@ -67,102 +81,103 @@ function ids(cf: CompiledFilter): string[] {
   ).map((r) => r.id);
 }
 
-describe("compileFilter", () => {
-  it("scopes to the given repo ids", () => {
-    expect(ids(compileFilter(undefined, ["R_1"], now))).toEqual(["I_1", "I_2"]);
-  });
+function run(filter: GroupFilter, repos = ALL, caseSensitive = false): string[] {
+  return ids(compileFilter(filter, repos, now, caseSensitive));
+}
 
-  it("matches nothing for an empty repo set", () => {
-    const cf = compileFilter(undefined, [], now);
-    expect(cf).toEqual({ where: "0", params: [] });
-    expect(ids(cf)).toEqual([]);
+describe("compileFilter", () => {
+  it("scopes to repo ids and matches nothing for an empty set", () => {
+    expect(ids(compileFilter(undefined, ["R_1"], now))).toEqual(["I_1", "I_2"]);
+    expect(compileFilter(undefined, [], now)).toEqual({ where: "0", params: [] });
   });
 
   it("filters pull requests by type", () => {
-    expect(ids(compileFilter({ type: "pull_request" }, ["R_1", "R_2"], now))).toEqual(["I_2"]);
+    expect(run({ type: "pull_request" })).toEqual(["I_2"]);
   });
 
-  it("requires all included labels", () => {
-    expect(ids(compileFilter({ labelsInclude: ["bug", "triaged"] }, ["R_1", "R_2"], now))).toEqual([
-      "I_1",
-    ]);
+  describe("labels (set dimension)", () => {
+    it("include is any-of", () => {
+      expect(run({ labels: { include: ["bug"] } })).toEqual(["I_1", "I_3"]);
+    });
+    it("a list of matchers is ANDed (requires all)", () => {
+      expect(run({ labels: [{ include: ["bug"] }, { include: ["triaged"] }] })).toEqual(["I_1"]);
+    });
+    it("exclude removes any with the label (no labels also matches)", () => {
+      expect(run({ labels: { exclude: ["triaged"] } })).toEqual(["I_2", "I_3"]);
+    });
+    it("set:false matches issues with no labels", () => {
+      expect(run({ labels: { set: false } })).toEqual(["I_2"]);
+    });
+    it("a single matcher object behaves like a one-element list", () => {
+      expect(run({ labels: { include: ["triaged"] } })).toEqual(
+        run({ labels: [{ include: ["triaged"] }] }),
+      );
+    });
   });
 
-  it("excludes issues carrying an excluded label", () => {
-    expect(ids(compileFilter({ labelsExclude: ["triaged"] }, ["R_1", "R_2"], now))).toEqual([
-      "I_2",
-      "I_3",
-    ]);
+  describe("assignees (set dimension)", () => {
+    it("include matches an assignee", () => {
+      expect(run({ assignee: { include: ["alice"] } })).toEqual(["I_1"]);
+    });
+    it("set:false matches unassigned issues", () => {
+      expect(run({ assignee: { set: false } })).toEqual(["I_2"]);
+    });
   });
 
-  it("matches an assignee in the JSON array", () => {
-    expect(ids(compileFilter({ assignee: "alice" }, ["R_1", "R_2"], now))).toEqual(["I_1"]);
+  describe("author / milestone / issueType (scalar dimensions)", () => {
+    it("is matches case-insensitively by default", () => {
+      expect(run({ author: { is: "octocat" } })).toEqual(["I_1"]);
+    });
+    it("like does a fuzzy match", () => {
+      expect(run({ author: { like: "%bot%" } })).toEqual(["I_2"]);
+    });
+    it("exclude treats a missing value as not-in", () => {
+      expect(run({ author: { exclude: ["alice"] } })).toEqual(["I_1", "I_2"]);
+    });
+    it("milestone set:false matches a missing milestone", () => {
+      expect(run({ milestone: { set: false } })).toEqual(["I_2"]);
+    });
+    it("issueType include is any-of", () => {
+      expect(run({ issueType: { include: ["Bug", "Task"] } })).toEqual(["I_1", "I_3"]);
+    });
   });
 
-  it("filters by issue type name", () => {
-    expect(ids(compileFilter({ issueType: ["Bug"] }, ["R_1", "R_2"], now))).toEqual(["I_1"]);
+  describe("age (numeric dimension)", () => {
+    it("gte selects older issues", () => {
+      expect(run({ age: { gte: 7 } })).toEqual(["I_1"]);
+    });
+    it("lt selects newer issues", () => {
+      expect(run({ age: { lt: 7 } })).toEqual(["I_2", "I_3"]);
+    });
   });
 
-  it("filters by age in days", () => {
-    expect(ids(compileFilter({ ageDays: { op: ">=", value: 7 } }, ["R_1", "R_2"], now))).toEqual([
-      "I_1",
-    ]);
+  describe("fields", () => {
+    it("include matches a select value (case-insensitive)", () => {
+      expect(run({ fields: [{ name: "priority", include: ["high"] }] })).toEqual(["I_1"]);
+    });
+    it("exclude removes matching values (no value also matches)", () => {
+      expect(run({ fields: [{ name: "Priority", exclude: ["Low"] }] })).toEqual(["I_1", "I_2"]);
+    });
+    it("numeric comparison on a number field", () => {
+      expect(run({ fields: [{ name: "Effort", gte: 3 }] })).toEqual(["I_1"]);
+    });
+    it("set:false matches issues without that field", () => {
+      expect(run({ fields: [{ name: "Priority", set: false }] })).toEqual(["I_2"]);
+      expect(run({ fields: [{ name: "Department", set: false }] })).toEqual(["I_1", "I_2", "I_3"]);
+    });
   });
 
-  it("filters by a single-select field value", () => {
-    expect(
-      ids(compileFilter({ fields: [{ name: "Priority", in: ["High"] }] }, ["R_1", "R_2"], now)),
-    ).toEqual(["I_1"]);
+  describe("case sensitivity", () => {
+    it("is is exact when caseSensitive is true", () => {
+      expect(run({ author: { is: "octocat" } }, ALL, true)).toEqual([]);
+      expect(run({ author: { is: "Octocat" } }, ALL, true)).toEqual(["I_1"]);
+    });
+    it("like stays case-insensitive even when caseSensitive is true", () => {
+      expect(run({ author: { like: "%BOT%" } }, ALL, true)).toEqual(["I_2"]);
+    });
   });
 
-  it("excludes field values with notIn, and issues lacking the field still match", () => {
-    expect(
-      ids(compileFilter({ fields: [{ name: "Priority", notIn: ["High"] }] }, ["R_1", "R_2"], now)),
-    ).toEqual(["I_2", "I_3"]);
-  });
-
-  it("combines in and notIn on the same field", () => {
-    expect(
-      ids(
-        compileFilter(
-          { fields: [{ name: "Priority", in: ["High", "Low"], notIn: ["Low"] }] },
-          ["R_1", "R_2"],
-          now,
-        ),
-      ),
-    ).toEqual(["I_1"]);
-  });
-
-  it("filters by a numeric field comparison", () => {
-    expect(
-      ids(compileFilter({ fields: [{ name: "Effort", op: ">=", value: 3 }] }, ["R_1", "R_2"], now)),
-    ).toEqual(["I_1"]);
-  });
-
-  it("selects issues lacking a field when unset is set", () => {
-    expect(
-      ids(compileFilter({ fields: [{ name: "Priority", unset: true }] }, ["R_1", "R_2"], now)),
-    ).toEqual(["I_2"]);
-  });
-
-  it("matches labels case-insensitively by default", () => {
-    expect(ids(compileFilter({ labelsInclude: ["BUG"] }, ["R_1", "R_2"], now))).toEqual([
-      "I_1",
-      "I_3",
-    ]);
-  });
-
-  it("matches field name and value case-insensitively by default", () => {
-    expect(
-      ids(compileFilter({ fields: [{ name: "priority", in: ["high"] }] }, ["R_1", "R_2"], now)),
-    ).toEqual(["I_1"]);
-  });
-
-  it("is exact when caseSensitive is true", () => {
-    expect(ids(compileFilter({ labelsInclude: ["BUG"] }, ["R_1", "R_2"], now, true))).toEqual([]);
-    expect(ids(compileFilter({ labelsInclude: ["bug"] }, ["R_1", "R_2"], now, true))).toEqual([
-      "I_1",
-      "I_3",
-    ]);
+  it("ANDs conditions across dimensions", () => {
+    expect(run({ type: "issue", labels: { include: ["bug"] }, age: { gte: 7 } })).toEqual(["I_1"]);
   });
 });
