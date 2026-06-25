@@ -1,9 +1,7 @@
 # AGENTS.md
 
 Orientation for coding agents working on Seleya. For user-facing setup, read
-`README.md`. For the design rationale, read
-`docs/superpowers/specs/2026-06-24-seleya-issue-dashboard-design.md`. The work
-was built in three plans under `docs/superpowers/plans/`.
+`README.md`.
 
 ## What Seleya is
 

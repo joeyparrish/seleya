@@ -138,4 +138,4 @@ npm run dev         # server with reload
 
 ## License
 
-Apache License 2.0. See [LICENSE.md](LICENSE.md) and [NOTICE](NOTICE).
+Apache License 2.0. See [LICENSE.md](LICENSE.md).
