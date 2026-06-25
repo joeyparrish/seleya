@@ -2,7 +2,7 @@ import path from "node:path";
 import express from "express";
 import type Database from "better-sqlite3";
 import type { Config } from "../config/schema.js";
-import { listTabMemberships } from "../db/membership.js";
+import { tabRepoIdsByName } from "../db/membership.js";
 import { assembleTab } from "../query/assemble.js";
 import type { RefreshController } from "../refresh/orchestrator.js";
 
@@ -22,30 +22,35 @@ export function createApp(deps: AppDeps): express.Express {
   const now = deps.now ?? (() => new Date());
 
   app.get("/api/tabs", (_req, res) => {
-    const memberships = listTabMemberships(deps.db);
+    const byName = tabRepoIdsByName(deps.db);
     // Opening the dashboard kicks a background refresh when data is stale or no
     // membership has been persisted yet (e.g. the DB was populated by the CLI,
     // which does not persist membership). The response is served immediately
     // from the local store regardless.
     if (
       !deps.refresh.getStatus().running &&
-      (memberships.length === 0 || deps.refresh.isStaleOverall(now()))
+      (byName.size === 0 || deps.refresh.isStaleOverall(now()))
     ) {
       void deps.refresh.refresh();
     }
-    const tabs = memberships.map((m) => ({ index: m.position, name: m.tabName }));
+    // Order and names come from the live config; the DB supplies repo membership
+    // by name. Tabs with no resolved repos (including an empty catch-all) are
+    // hidden.
+    const tabs = deps.config.tabs
+      .map((tab, index) => ({ index, name: tab.name }))
+      .filter(({ name }) => (byName.get(name)?.length ?? 0) > 0);
     res.json({ tabs });
   });
 
   app.get("/api/tabs/:index", (req, res) => {
     const index = Number(req.params.index);
-    const membership = listTabMemberships(deps.db).find((m) => m.position === index);
     const tab = deps.config.tabs[index];
-    if (!membership || !tab) {
+    if (!tab) {
       res.status(404).json({ error: "tab not found" });
       return;
     }
-    res.json(assembleTab(deps.db, membership, tab, now()));
+    const repoIds = tabRepoIdsByName(deps.db).get(tab.name) ?? [];
+    res.json(assembleTab(deps.db, { position: index, tabName: tab.name, repoIds }, tab, now()));
   });
 
   app.get("/api/refresh/status", (_req, res) => {

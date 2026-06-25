@@ -25,6 +25,24 @@ export function replaceTabMemberships(
   tx();
 }
 
+/**
+ * Repo ids grouped by tab name. The read path matches the live config's tabs to
+ * their persisted repos by name, so reordering or renaming tabs in the config
+ * does not require a refresh to take effect.
+ */
+export function tabRepoIdsByName(db: Database.Database): Map<string, string[]> {
+  const rows = db
+    .prepare("SELECT tab_name, repo_id FROM tab_repos ORDER BY rowid")
+    .all() as Array<{ tab_name: string; repo_id: string }>;
+  const map = new Map<string, string[]>();
+  for (const r of rows) {
+    const arr = map.get(r.tab_name) ?? [];
+    arr.push(r.repo_id);
+    map.set(r.tab_name, arr);
+  }
+  return map;
+}
+
 export function listTabMemberships(db: Database.Database): TabMembership[] {
   const rows = db
     .prepare("SELECT position, tab_name, repo_id FROM tab_repos ORDER BY position")

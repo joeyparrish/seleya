@@ -62,6 +62,34 @@ describe("API routes", () => {
     expect(res.body).toEqual({ tabs: [{ index: 0, name: "Org" }] });
   });
 
+  it("GET /api/tabs returns tabs in config order, matched by name (survives reorder)", async () => {
+    const db = openDatabase(":memory:");
+    upsertRepo(db, { id: "R_1", owner: "o", name: "a", isFork: false });
+    upsertRepo(db, { id: "R_2", owner: "o", name: "b", isFork: false });
+    // Persisted earlier as Alpha=0, Beta=1.
+    replaceTabMemberships(db, [
+      { position: 0, name: "Alpha", repoIds: ["R_1"] },
+      { position: 1, name: "Beta", repoIds: ["R_2"] },
+    ]);
+    // Config now lists Beta before Alpha; no refresh has run.
+    const reordered: Config = {
+      ...config,
+      tabs: [
+        { name: "Beta", match: [{ org: "o" }] },
+        { name: "Alpha", match: [{ org: "o" }] },
+      ],
+    };
+    const res = await request(
+      createApp({ db, config: reordered, refresh: makeRefresh().controller }),
+    ).get("/api/tabs");
+    expect(res.body).toEqual({
+      tabs: [
+        { index: 0, name: "Beta" },
+        { index: 1, name: "Alpha" },
+      ],
+    });
+  });
+
   it("GET /api/tabs/:index assembles the tab; 404 for an unknown index", async () => {
     const db = openDatabase(":memory:");
     seed(db);

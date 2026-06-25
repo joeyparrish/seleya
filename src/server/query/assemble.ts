@@ -1,7 +1,7 @@
 import type Database from "better-sqlite3";
 import type { Config, GroupFilter, Tab } from "../config/schema.js";
 import type { FieldDataType } from "../db/fields.js";
-import { listTabMemberships, type TabMembership } from "../db/membership.js";
+import { tabRepoIdsByName, type TabMembership } from "../db/membership.js";
 import { compileFilter } from "./filter.js";
 
 export interface FieldView {
@@ -144,10 +144,12 @@ export function assembleTab(
 }
 
 export function assembleAllTabs(db: Database.Database, config: Config, now: Date): TabView[] {
+  const byName = tabRepoIdsByName(db);
   const out: TabView[] = [];
-  for (const m of listTabMemberships(db)) {
-    const tab = config.tabs[m.position];
-    if (tab) out.push(assembleTab(db, m, tab, now));
-  }
+  config.tabs.forEach((tab, index) => {
+    const repoIds = byName.get(tab.name) ?? [];
+    if (repoIds.length === 0) return;
+    out.push(assembleTab(db, { position: index, tabName: tab.name, repoIds }, tab, now));
+  });
   return out;
 }

@@ -80,6 +80,12 @@ example). Top-level keys:
 | `forkAllowlist` | List of `owner/name` forks to include despite the fork exclusion. |
 | `tabs` | The ordered list of tabs (see below). |
 
+Seleya reads `config.yaml` once at startup, so restart the server after editing
+it. Reordering, renaming, or regrouping tabs takes effect on restart alone.
+Changes that alter which repositories a tab contains (match rules, `exclude`,
+`forkAllowlist`) also need a refresh so Seleya can re-resolve membership from
+GitHub.
+
 ### Tabs and repository matching
 
 Each tab has a `name` and a `match` list. A tab's repositories are the union of

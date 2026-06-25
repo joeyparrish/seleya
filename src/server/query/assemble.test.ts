@@ -95,21 +95,35 @@ describe("assembleTab", () => {
   });
 });
 
+function cfgWith(tabs: Tab[]): Config {
+  return {
+    username: "o",
+    ttlMinutes: 10,
+    syncConcurrency: 6,
+    bindAddress: "127.0.0.1",
+    port: 8080,
+    forkAllowlist: [],
+    tabs,
+  };
+}
+
 describe("assembleAllTabs", () => {
-  it("maps each persisted membership to its config tab by position", () => {
-    const config: Config = {
-      username: "o",
-      ttlMinutes: 10,
-      syncConcurrency: 6,
-      bindAddress: "127.0.0.1",
-      port: 8080,
-      forkAllowlist: [],
-      tabs: [tab({ name: "First" }), tab({ name: "Second" })],
-    };
+  it("returns tabs in config order, matched to membership by name", () => {
     replaceTabMemberships(db, [
       { position: 0, name: "First", repoIds: ["R_1"] },
       { position: 1, name: "Second", repoIds: ["R_2"] },
     ]);
+    const config = cfgWith([tab({ name: "First" }), tab({ name: "Second" })]);
     expect(assembleAllTabs(db, config, now).map((t) => t.name)).toEqual(["First", "Second"]);
+  });
+
+  it("follows config order even when persisted positions differ (reorder without refresh)", () => {
+    // Persisted earlier as First=0, Second=1; config now lists Second first.
+    replaceTabMemberships(db, [
+      { position: 0, name: "First", repoIds: ["R_1"] },
+      { position: 1, name: "Second", repoIds: ["R_2"] },
+    ]);
+    const reordered = cfgWith([tab({ name: "Second" }), tab({ name: "First" })]);
+    expect(assembleAllTabs(db, reordered, now).map((t) => t.name)).toEqual(["Second", "First"]);
   });
 });
