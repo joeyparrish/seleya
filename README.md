@@ -68,7 +68,8 @@ an owner.
 ## Configuration
 
 Configuration lives in `config.yaml` (see `config.example.yaml` for a complete
-example). Top-level keys:
+example, and [docs/config-reference.md](docs/config-reference.md) for the full
+schema reference with filter recipes and a cheat sheet). Top-level keys:
 
 | Key | Meaning |
 | --- | --- |

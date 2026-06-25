@@ -73,4 +73,10 @@ For a live smoke test, use a real token via `gh auth token` against the real
   the live API.
 - Vitest strips types without type-checking, so always run `npm run typecheck`
   too; type errors (e.g. `RepoInfo` vs `RepoRow`) will pass tests but fail tsc.
+- `docs/config-reference.md` is a hand-maintained, user-friendly mirror of the
+  Zod config schema in `src/server/config/schema.ts`. When you change the schema
+  (keys, types, defaults, operators, match/filter rules), update
+  `docs/config-reference.md` to match, and keep `config.example.yaml` and the
+  README config section consistent too. There is no generator; they drift if not
+  updated together.
 - Keep prose in docs free of em-dashes and double hyphens (repo owner preference).

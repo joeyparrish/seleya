@@ -2,7 +2,7 @@
 # The GitHub PAT is NOT set here; export GITHUB_TOKEN in the environment.
 
 username: your-github-username   # used to compute the catch-all tab
-ttlMinutes: 10                   # global default staleness; per-tab override allowed
+ttlMinutes: 10                   # minutes before cached data is considered stale
 syncConcurrency: 6               # how many repos to sync in parallel
 bindAddress: 127.0.0.1           # do NOT expose publicly without external auth
 port: 7920
