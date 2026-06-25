@@ -11,17 +11,23 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "sync": "tsx src/server/cli.ts"
+    "sync": "tsx src/server/cli.ts",
+    "start": "tsx src/server/server.ts",
+    "dev": "tsx watch src/server/server.ts"
   },
   "dependencies": {
     "@octokit/graphql": "^8.1.1",
     "better-sqlite3": "^11.3.0",
+    "express": "^4.21.0",
     "yaml": "^2.5.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.11",
+    "@types/express": "^4.17.21",
     "@types/node": "^22.5.0",
+    "@types/supertest": "^6.0.2",
+    "supertest": "^7.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.6.2",
     "vitest": "^2.1.1"
