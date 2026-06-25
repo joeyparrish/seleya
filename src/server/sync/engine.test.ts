@@ -82,9 +82,47 @@ describe("syncRepo", () => {
     expect(state?.status).toBe("error");
     expect(state?.error).toMatch(/rate limited/);
   });
+
+  it("discovers definitions on first sync, skips on incremental, redoes on rediscover", async () => {
+    const db = openDatabase(":memory:");
+    upsertRepo(db, repo);
+    const discoverFields = vi.fn(async () => []);
+    const client = fakeClient({ fetchIssuesUpdatedSince: async () => [], discoverFields });
+
+    await syncRepo(db, client, repo); // first sync -> discovers
+    expect(discoverFields).toHaveBeenCalledTimes(1);
+
+    await syncRepo(db, client, repo); // incremental -> skips
+    expect(discoverFields).toHaveBeenCalledTimes(1);
+
+    await syncRepo(db, client, repo, { rediscover: true }); // forced -> discovers
+    expect(discoverFields).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("syncStaleRepos", () => {
+  it("syncs every due repo across the bounded worker pool", async () => {
+    const db = openDatabase(":memory:");
+    const repos: RepoInfo[] = Array.from({ length: 10 }, (_, i) => ({
+      id: `R_${i}`,
+      owner: "o",
+      name: `n${i}`,
+      isFork: false,
+      isArchived: false,
+    }));
+    for (const r of repos) upsertRepo(db, r);
+    const synced = new Set<string>();
+    const client = fakeClient({
+      fetchIssuesUpdatedSince: async (owner, name) => {
+        synced.add(`${owner}/${name}`);
+        return [];
+      },
+    });
+    await syncStaleRepos(db, client, repos, 10, { force: true, concurrency: 3 });
+    expect(synced.size).toBe(10);
+    for (const r of repos) expect(getSyncState(db, r.id)?.status).toBe("idle");
+  });
+
   it("skips fresh repos unless forced", async () => {
     const db = openDatabase(":memory:");
     upsertRepo(db, repo);

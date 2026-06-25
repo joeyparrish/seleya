@@ -16,7 +16,10 @@ async function main(): Promise<void> {
   for (const r of allRepos) upsertRepo(db, r);
 
   console.log(`Resolved ${allRepos.length} repositories. Syncing...`);
-  await syncStaleRepos(db, client, allRepos, config.ttlMinutes, { force: true });
+  await syncStaleRepos(db, client, allRepos, config.ttlMinutes, {
+    force: true,
+    concurrency: config.syncConcurrency,
+  });
 
   let errors = 0;
   for (const r of allRepos) {

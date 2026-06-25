@@ -50,6 +50,7 @@ export const configSchema = z
   .object({
     username: z.string().min(1),
     ttlMinutes: z.number().int().positive().default(10),
+    syncConcurrency: z.number().int().positive().default(6),
     bindAddress: z.string().default("127.0.0.1"),
     port: z.number().int().positive().default(8080),
     forkAllowlist: z.array(repoName).default([]),

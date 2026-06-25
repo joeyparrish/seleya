@@ -25,6 +25,7 @@ function client(data: { orgs?: Record<string, RepoInfo[]>; user?: RepoInfo[] }) 
 const cfg = (over: Partial<Config>): Config => ({
   username: "octocat",
   ttlMinutes: 10,
+  syncConcurrency: 6,
   bindAddress: "127.0.0.1",
   port: 8080,
   forkAllowlist: [],

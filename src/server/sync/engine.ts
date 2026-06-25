@@ -44,19 +44,25 @@ export async function syncRepo(
   db: Database.Database,
   client: GitHubClient,
   repo: RepoInfo,
-  opts?: { now?: Date },
+  opts?: { now?: Date; rediscover?: boolean },
 ): Promise<void> {
   const now = opts?.now ?? new Date();
   setSyncState(db, repo.id, { status: "syncing", error: null });
   try {
-    for (const t of await client.discoverIssueTypes(repo.owner, repo.name)) {
-      upsertIssueType(db, t);
-    }
-    for (const f of await client.discoverFields(repo.owner, repo.name)) {
-      upsertFieldDefinition(db, { ...f, repoId: repo.id });
+    const since = getSyncState(db, repo.id)?.lastSyncedAt ?? null;
+
+    // Type/field definitions change rarely, so discover them on a repo's first
+    // sync (or when explicitly asked, e.g. a deep refresh) rather than on every
+    // incremental sync. This removes two GraphQL round-trips per repo per sync.
+    if (since === null || opts?.rediscover) {
+      for (const t of await client.discoverIssueTypes(repo.owner, repo.name)) {
+        upsertIssueType(db, t);
+      }
+      for (const f of await client.discoverFields(repo.owner, repo.name)) {
+        upsertFieldDefinition(db, { ...f, repoId: repo.id });
+      }
     }
 
-    const since = getSyncState(db, repo.id)?.lastSyncedAt ?? null;
     const fetched = await client.fetchIssuesUpdatedSince(repo.owner, repo.name, since);
 
     for (const f of fetched) {
@@ -94,11 +100,23 @@ export async function syncStaleRepos(
   client: GitHubClient,
   repos: RepoInfo[],
   ttlMinutes: number,
-  opts?: { force?: boolean; now?: Date },
+  opts?: { force?: boolean; now?: Date; concurrency?: number; rediscover?: boolean },
 ): Promise<void> {
   const now = opts?.now ?? new Date();
-  for (const repo of repos) {
-    if (!opts?.force && !isStale(getSyncState(db, repo.id), ttlMinutes, now)) continue;
-    await syncRepo(db, client, repo, { now });
+  const due = repos.filter(
+    (repo) => opts?.force || isStale(getSyncState(db, repo.id), ttlMinutes, now),
+  );
+  // Each syncRepo isolates its own errors (it never throws), so one failing repo
+  // does not sink the batch. Concurrency is bounded to stay within GitHub's
+  // secondary rate limits.
+  const workerCount = Math.max(1, Math.min(opts?.concurrency ?? 6, due.length));
+
+  let next = 0;
+  async function worker(): Promise<void> {
+    while (next < due.length) {
+      const repo = due[next++];
+      await syncRepo(db, client, repo, { now, rediscover: opts?.rediscover });
+    }
   }
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
 }
