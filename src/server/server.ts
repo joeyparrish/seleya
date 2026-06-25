@@ -16,7 +16,7 @@ const clientDir =
   process.env.SELEYA_CLIENT_DIR ?? (existsSync("dist/client") ? "dist/client" : undefined);
 const app = createApp({ db, config, refresh, clientDir });
 
-app.listen(config.port, config.bindAddress, () => {
+const server = app.listen(config.port, config.bindAddress, () => {
   console.log(`Seleya listening on http://${config.bindAddress}:${config.port}`);
   console.log(clientDir ? `Serving UI from ${clientDir}` : "API only (no client build found)");
   console.log(
@@ -24,3 +24,12 @@ app.listen(config.port, config.bindAddress, () => {
       "gate private-repo access at the network layer.",
   );
 });
+
+// Exit promptly and cleanly on container/host signals.
+for (const signal of ["SIGTERM", "SIGINT"] as const) {
+  process.on(signal, () => {
+    server.close(() => process.exit(0));
+    // Fall back to a hard exit if connections linger.
+    setTimeout(() => process.exit(0), 3000).unref();
+  });
+}

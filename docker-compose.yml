@@ -1,0 +1,17 @@
+# Local / single-VM deployment. Provide GITHUB_TOKEN in the environment (or a
+# .env file next to this one) and a config.yaml beside it.
+services:
+  seleya:
+    build: .
+    image: seleya
+    ports:
+      - "7920:7920"
+    environment:
+      GITHUB_TOKEN: ${GITHUB_TOKEN:?set GITHUB_TOKEN in the environment or .env}
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - seleya-data:/data
+    restart: unless-stopped
+
+volumes:
+  seleya-data:

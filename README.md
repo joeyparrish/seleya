@@ -152,6 +152,45 @@ definitions and reconciles deletions: issues removed or transferred on GitHub,
 and repositories that have become archived or otherwise left the match set, are
 removed locally.
 
+## Deploy with Docker
+
+A published image is available on Docker Hub. The simplest deployment needs only
+two inputs, both as environment variables and no volumes:
+
+```bash
+docker run -p 7920:7920 \
+  -e GITHUB_TOKEN=ghp_... \
+  -e SELEYA_CONFIG_YAML="$(cat config.yaml)" \
+  joeyparrish/seleya
+```
+
+Environment variables the image understands:
+
+| Variable | Purpose |
+| --- | --- |
+| `GITHUB_TOKEN` | Required. The PAT (or `SELEYA_GITHUB_TOKEN`). |
+| `SELEYA_CONFIG_YAML` | The full config as inline YAML. Alternatively mount a file at `/app/config.yaml`. |
+| `PORT` | Port to listen on. Defaults to `7920`; honors a platform-injected `PORT`. |
+| `SELEYA_BIND_ADDRESS` | Defaults to `0.0.0.0` in the image (required inside a container). |
+| `SELEYA_DB` | SQLite path. Defaults to `/data/seleya.db`. |
+
+Because the image binds `0.0.0.0` with no built-in authentication, **the platform
+in front of it must gate access** (its own auth, a VPN, or a reverse proxy). See
+the security note at the top of this file. The `Host`-header guard is off for a
+non-loopback bind, so no `allowedHosts` configuration is needed.
+
+The database is just a cache. By default it is ephemeral and rebuilds itself from
+GitHub on first load after a restart (a full first sync). To avoid re-syncing on
+every cold start, mount a volume at `/data`.
+
+For a local machine or single VM, `docker-compose.yml` mounts `config.yaml`, reads
+`GITHUB_TOKEN` from the environment or a `.env` file, and persists the cache in a
+named volume:
+
+```bash
+GITHUB_TOKEN=ghp_... docker compose up --build
+```
+
 ## Development
 
 ```bash
