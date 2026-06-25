@@ -75,15 +75,19 @@ types may be freely mixed within a single tab. For example a tab may combine
 - **Org rule:** expands an org into every repository the PAT can see in it
   (including private), via the GitHub API.
 - **Explicit rule:** named `owner/name` repositories (for repos not related by
-  an org).
+  an org). Explicit repos that no org/user rule discovered are fetched directly
+  by `owner/name`, and an explicitly-named repo is included even if it is a fork
+  or archived (explicit naming is an override).
 - **Catch-all:** repositories owned by the operator's username that are **not**
   claimed by any other tab's rules. The catch-all is exclusionary so it acts as
   a true "leftovers" bucket. **If the catch-all matches no repositories, no tab
   is rendered for it.**
 
 Regular tabs **may overlap** (the same repo can intentionally appear in more than
-one tab); only the catch-all dedups against other tabs. **Forks are excluded
-everywhere** unless listed on a global fork allowlist.
+one tab); only the catch-all dedups against other tabs. In org/wildcard and
+catch-all matches, **forks are excluded** unless listed on a global fork
+allowlist, and **archived repositories are excluded**. Both exclusions are
+overridden by naming a repo explicitly.
 
 ### GitHub client
 A thin wrapper over GitHub's GraphQL API (plus REST for discovery). It is
