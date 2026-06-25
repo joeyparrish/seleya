@@ -13,6 +13,7 @@ export const fieldFilterSchema = z
   .object({
     name: z.string().min(1),
     in: z.array(z.string()).optional(),
+    notIn: z.array(z.string()).optional(),
     op: z.enum([">", ">=", "<", "<=", "=", "!="]).optional(),
     value: z.number().optional(),
     unset: z.boolean().optional(),

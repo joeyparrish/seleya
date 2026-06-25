@@ -120,12 +120,14 @@ Notes:
 Each entry in `fields` targets one beta custom Field by `name` and is matched
 **by field name across organizations**: a `Priority` condition applies wherever a
 `Priority` field exists. Issues in organizations that do not define the field do
-not match `in` or numeric conditions, and do match `unset: true`.
+not match `in` or numeric conditions, and do match `notIn` and `unset: true`.
 
 ```yaml
 fields:
   - name: Priority               # required: the field name
     in: [High, Critical]         # select/text fields: value is one of these
+  - name: Status                 # select/text fields:
+    notIn: [Done, Closed]        #   value is none of these
   - name: Effort                 # number fields:
     op: ">="                     #   one of > >= < <= = !=
     value: 3
@@ -137,6 +139,7 @@ fields:
 | --- | --- | --- | --- |
 | `name` | string | required | The field's name. |
 | `in` | list of string | single/multi-select, text | Field value is one of these. |
+| `notIn` | list of string | single/multi-select, text | Field value is none of these. Issues with no value for the field also match. |
 | `op` + `value` | operator + number | number fields | Numeric comparison against `value`. |
 | `unset` | `true` | any field | The issue has no value set for this field. |
 
@@ -221,6 +224,8 @@ filter:
   fields:
     - name: Priority
       in: [High]                 # select/text: value in list
+    - name: Status
+      notIn: [Done]              # select/text: value not in list
     - name: Effort
       op: ">="                   # number: > >= < <= = !=
       value: 3

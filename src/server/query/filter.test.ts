@@ -115,6 +115,24 @@ describe("compileFilter", () => {
     ).toEqual(["I_1"]);
   });
 
+  it("excludes field values with notIn, and issues lacking the field still match", () => {
+    expect(
+      ids(compileFilter({ fields: [{ name: "Priority", notIn: ["High"] }] }, ["R_1", "R_2"], now)),
+    ).toEqual(["I_2", "I_3"]);
+  });
+
+  it("combines in and notIn on the same field", () => {
+    expect(
+      ids(
+        compileFilter(
+          { fields: [{ name: "Priority", in: ["High", "Low"], notIn: ["Low"] }] },
+          ["R_1", "R_2"],
+          now,
+        ),
+      ),
+    ).toEqual(["I_1"]);
+  });
+
   it("filters by a numeric field comparison", () => {
     expect(
       ids(compileFilter({ fields: [{ name: "Effort", op: ">=", value: 3 }] }, ["R_1", "R_2"], now)),

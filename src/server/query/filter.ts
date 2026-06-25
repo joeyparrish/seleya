@@ -92,6 +92,16 @@ export function compileFilter(
         );
         params.push(f.name, ...f.in);
       }
+      if (f.notIn && f.notIn.length > 0) {
+        // Matches when the field has none of these values, including issues that
+        // have no value for the field at all (mirrors labelsExclude).
+        conditions.push(
+          `NOT EXISTS (SELECT 1 FROM issue_field_values v WHERE v.issue_id = issues.id AND v.field_name = ? AND v.value_text IN (${f.notIn
+            .map(() => "?")
+            .join(", ")}))`,
+        );
+        params.push(f.name, ...f.notIn);
+      }
       if (f.op !== undefined && f.value !== undefined) {
         const op = NUMERIC_OPS[f.op];
         if (!op) throw new Error(`Unsupported field operator: ${f.op}`);
