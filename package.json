@@ -4,6 +4,24 @@
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
+  "description": "Self-hosted dashboard that aggregates open GitHub issues and pull requests across many repositories and organizations into configurable tabs and groups.",
+  "keywords": [
+    "github",
+    "issues",
+    "pull-requests",
+    "dashboard",
+    "self-hosted",
+    "triage"
+  ],
+  "homepage": "https://github.com/joeyparrish/seleya#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joeyparrish/seleya.git"
+  },
+  "bugs": {
+    "url": "https://github.com/joeyparrish/seleya/issues"
+  },
+  "author": "Joey Parrish <joey.parrish@gmail.com>",
   "engines": { "node": "^20.19.0 || >=22.12.0" },
   "bin": { "seleya": "dist/server/cli.js" },
   "scripts": {
