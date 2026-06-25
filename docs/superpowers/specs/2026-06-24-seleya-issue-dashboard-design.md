@@ -98,10 +98,14 @@ operations for: listing org repos, fetching issues/PRs updated since a timestamp
 definitions, and discovering custom Field definitions and their options.
 
 ### Sync engine
-Checks per-repo TTL staleness and enqueues stale repos, processing them
-**serially** to stay friendly with rate limits. Sync is **incremental**: it
-fetches issues updated since the last sync, ordered by `updatedAt`, across all
-states so that issues which have transitioned to closed are detected.
+Checks per-repo TTL staleness and enqueues stale repos, processing them through
+a **bounded worker pool** (configurable concurrency, default 6) to stay within
+GitHub's secondary rate limits while avoiding slow serial round-trips. Sync is
+**incremental**: it fetches issues updated since the last sync, ordered by
+`updatedAt`, across all states so that issues which have transitioned to closed
+are detected. Type/field **definitions** are discovered only on a repo's first
+sync (and on an explicit rediscover such as the deep refresh), not on every
+incremental sync, since they change rarely.
 
 - Open issues and open PRs are upserted into the store.
 - Issues that have become closed (or whose state is no longer open) are deleted
