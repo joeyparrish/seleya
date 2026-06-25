@@ -41,6 +41,7 @@ export const tabSchema = z
   .object({
     name: z.string().min(1),
     match: z.array(matchRuleSchema).min(1),
+    exclude: z.array(repoName).optional(),
     groups: z.array(groupSchema).optional(),
     ttlMinutes: z.number().int().positive().optional(),
   })

@@ -14,6 +14,8 @@ tabs:
   - name: Shaka Project
     match:
       - org: shaka-project
+    exclude:                       # remove specific repos from this tab
+      - shaka-project/some-archived-helper
     groups:
       - name: Needs triage
         filter:
@@ -33,3 +35,5 @@ tabs:
   - name: Personal
     match:
       - catchAll: true
+    exclude:                       # works on the catch-all too
+      - your-github-username/scratch-repo

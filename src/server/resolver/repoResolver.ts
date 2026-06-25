@@ -94,7 +94,10 @@ export async function resolveRepos(
       }
     }
 
-    const repos = [...set.values()];
+    // Per-tab exclusions are applied after the union, so they remove repos
+    // regardless of which rule (including the catch-all) introduced them.
+    const exclude = new Set((tab.exclude ?? []).map((s) => s.toLowerCase()));
+    const repos = [...set.values()].filter((r) => !exclude.has(key(r.owner, r.name)));
     const isCatchAll = tab.match.some((m) => "catchAll" in m);
     if (isCatchAll && repos.length === 0) continue; // omit empty catch-all
     tabs.push({ name: tab.name, repos, tab });

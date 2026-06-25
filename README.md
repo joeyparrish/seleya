@@ -94,6 +94,11 @@ In `org` and `catchAll` matches, forks are excluded (unless listed in
 `forkAllowlist`) and archived repositories are excluded. Naming a repository
 explicitly in a `repos` rule overrides both exclusions.
 
+A tab may also list `exclude: [owner/name, ...]` to remove specific repositories
+from that tab after its match rules are applied. This works for every rule type,
+including the catch-all. Excluding a repository only hides it from that tab; it
+does not reassign the repository to another tab.
+
 ### Groups and filters
 
 Within a tab, `groups` partitions issues into named, collapsible sections. A tab

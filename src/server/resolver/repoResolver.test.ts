@@ -111,6 +111,24 @@ describe("resolveRepos", () => {
     expect(repos.tabs.map((t) => t.name)).toEqual(["Org"]);
   });
 
+  it("excludes named repos from a tab, including from the catch-all", async () => {
+    const c = cfg({
+      tabs: [
+        { name: "Org", match: [{ org: "org" }], exclude: ["org/legacy"] },
+        { name: "Personal", match: [{ catchAll: true }], exclude: ["octocat/junk"] },
+      ],
+    });
+    const repos = await resolveRepos(
+      c,
+      client({
+        orgs: { org: [repo("R_1", "org", "lib"), repo("R_2", "org", "legacy")] },
+        user: [repo("R_3", "octocat", "dotfiles"), repo("R_4", "octocat", "junk")],
+      }),
+    );
+    expect(repos.tabs.find((t) => t.name === "Org")!.repos.map((r) => r.id)).toEqual(["R_1"]);
+    expect(repos.tabs.find((t) => t.name === "Personal")!.repos.map((r) => r.id)).toEqual(["R_3"]);
+  });
+
   it("skips archived repos in org and catch-all matches but keeps them when named explicitly", async () => {
     const c = cfg({
       tabs: [
