@@ -1,0 +1,34 @@
+# Seleya configuration. Copy to config.yaml and edit.
+# The GitHub PAT is NOT set here; export GITHUB_TOKEN in the environment.
+
+username: your-github-username   # used to compute the catch-all tab
+ttlMinutes: 10                   # global default staleness; per-tab override allowed
+bindAddress: 127.0.0.1           # do NOT expose publicly without external auth
+port: 8080
+
+forkAllowlist:
+  - some-owner/a-fork-worth-keeping
+
+tabs:
+  - name: Shaka Project
+    match:
+      - org: shaka-project
+    groups:
+      - name: Needs triage
+        filter:
+          labelsExclude: [triaged]
+          type: issue
+      - name: High priority
+        filter:
+          fields:
+            - name: Priority
+              in: [High, Critical]
+
+  - name: Mixed
+    match:
+      - org: some-org
+      - repos: [another-owner/foo, another-owner/bar]
+
+  - name: Personal
+    match:
+      - catchAll: true
