@@ -66,7 +66,11 @@ config or a missing/invalid PAT.
 
 ### Repo resolver
 Turns the validated config into a concrete set of repositories and a tab-to-repo
-mapping:
+mapping. Every tab has an operator-supplied **name** (used as the tab label).
+
+A tab's repositories are the **union of one or more match rules**, and rule
+types may be freely mixed within a single tab. For example a tab may combine
+`org1/*` + `org2/*`, or `org1/*` + `org2/foo` + `org2/bar`. The rule types are:
 
 - **Org rule:** expands an org into every repository the PAT can see in it
   (including private), via the GitHub API.
@@ -74,7 +78,8 @@ mapping:
   an org).
 - **Catch-all:** repositories owned by the operator's username that are **not**
   claimed by any other tab's rules. The catch-all is exclusionary so it acts as
-  a true "leftovers" bucket.
+  a true "leftovers" bucket. **If the catch-all matches no repositories, no tab
+  is rendered for it.**
 
 Regular tabs **may overlap** (the same repo can intentionally appear in more than
 one tab); only the catch-all dedups against other tabs. **Forks are excluded
