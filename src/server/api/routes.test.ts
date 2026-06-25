@@ -122,7 +122,7 @@ describe("API routes", () => {
     const app = createApp({ db, config, refresh: controller });
     const res = await request(app).post("/api/refresh?deep=true");
     expect(res.status).toBe(202);
-    expect(refresh).toHaveBeenCalledWith({ deep: true });
+    expect(refresh).toHaveBeenCalledWith({ deep: true, force: true });
   });
 
   it("GET /api/tabs background-refreshes only when stale and not already running", async () => {

@@ -59,9 +59,13 @@ export class RefreshController {
     return repos.some((r) => isStale(getSyncState(this.db, r.id), this.config.ttlMinutes, now));
   }
 
-  async refresh(opts?: { deep?: boolean; now?: Date }): Promise<void> {
+  async refresh(opts?: { deep?: boolean; force?: boolean; now?: Date }): Promise<void> {
     if (this.status.running) return;
     const deep = opts?.deep ?? false;
+    // A manual refresh forces a re-sync of every repo regardless of TTL; a deep
+    // refresh always forces. The automatic on-open trigger leaves force off so it
+    // only syncs repos past their TTL.
+    const force = (opts?.force ?? false) || deep;
     const now = opts?.now ?? new Date();
     this.status = { ...idleStatus(), running: true, deep, startedAt: now.toISOString() };
 
@@ -87,7 +91,7 @@ export class RefreshController {
 
       this.status.total = allRepos.length;
       await syncStaleRepos(this.db, this.client, allRepos, this.config.ttlMinutes, {
-        force: deep,
+        force,
         rediscover: deep,
         concurrency: this.config.syncConcurrency,
         now,

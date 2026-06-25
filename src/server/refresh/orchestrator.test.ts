@@ -79,6 +79,25 @@ describe("RefreshController", () => {
     expect(listRepos(db).map((r) => r.id)).toEqual(["R_1"]);
   });
 
+  it("a forced refresh re-syncs fresh repos; an unforced one respects the TTL", async () => {
+    const db = openDatabase(":memory:");
+    const fetch = vi.fn(async () => []);
+    const client = fakeClient({
+      listOrgRepos: async () => [repoInfo("R_1", "a")],
+      fetchIssuesUpdatedSince: fetch,
+    });
+    const c = new RefreshController(db, client, orgTab);
+
+    await c.refresh({ now: new Date("2026-01-01T00:00:00Z") }); // first sync (stale)
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    await c.refresh({ now: new Date("2026-01-01T00:01:00Z") }); // fresh, unforced -> skipped
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    await c.refresh({ force: true, now: new Date("2026-01-01T00:01:00Z") }); // forced -> re-sync
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
   it("is single-flight: a concurrent refresh is a no-op", async () => {
     const db = openDatabase(":memory:");
     const listOrgRepos = vi.fn(async () => [repoInfo("R_1", "a")]);

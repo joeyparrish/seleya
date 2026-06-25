@@ -96,7 +96,8 @@ export function createApp(deps: AppDeps): express.Express {
 
   app.post("/api/refresh", (req, res) => {
     const deep = req.query.deep === "true";
-    void deps.refresh.refresh({ deep });
+    // A manual refresh always forces a re-sync, regardless of TTL.
+    void deps.refresh.refresh({ deep, force: true });
     res.status(202).json(deps.refresh.getStatus());
   });
 
