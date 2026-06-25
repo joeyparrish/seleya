@@ -111,4 +111,12 @@ describe("API routes", () => {
     await request(createApp({ db, config, refresh: running.controller })).get("/api/tabs");
     expect(running.refresh).not.toHaveBeenCalled();
   });
+
+  it("GET /api/tabs background-refreshes when no membership is persisted, even if fresh", async () => {
+    const db = openDatabase(":memory:"); // no membership seeded
+    const fresh = makeRefresh({ stale: false });
+    const res = await request(createApp({ db, config, refresh: fresh.controller })).get("/api/tabs");
+    expect(res.body).toEqual({ tabs: [] });
+    expect(fresh.refresh).toHaveBeenCalledTimes(1);
+  });
 });

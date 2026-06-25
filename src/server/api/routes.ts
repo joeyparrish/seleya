@@ -22,12 +22,18 @@ export function createApp(deps: AppDeps): express.Express {
   const now = deps.now ?? (() => new Date());
 
   app.get("/api/tabs", (_req, res) => {
-    // Opening the dashboard kicks a background refresh when data is stale; the
-    // response itself is served immediately from the local store.
-    if (!deps.refresh.getStatus().running && deps.refresh.isStaleOverall(now())) {
+    const memberships = listTabMemberships(deps.db);
+    // Opening the dashboard kicks a background refresh when data is stale or no
+    // membership has been persisted yet (e.g. the DB was populated by the CLI,
+    // which does not persist membership). The response is served immediately
+    // from the local store regardless.
+    if (
+      !deps.refresh.getStatus().running &&
+      (memberships.length === 0 || deps.refresh.isStaleOverall(now()))
+    ) {
       void deps.refresh.refresh();
     }
-    const tabs = listTabMemberships(deps.db).map((m) => ({ index: m.position, name: m.tabName }));
+    const tabs = memberships.map((m) => ({ index: m.position, name: m.tabName }));
     res.json({ tabs });
   });
 
