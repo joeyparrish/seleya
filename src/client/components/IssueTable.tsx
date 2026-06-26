@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Anchor, Badge, Group, Table, Text } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   createColumnHelper,
   flexRender,
@@ -34,6 +35,24 @@ function mantineColor(c?: string): string {
 
 export function IssueTable({ issues }: { issues: IssueView[] }) {
   const [sorting, setSorting] = useState<SortingState>([]);
+
+  // Progressively reveal columns as the screen widens; Type and Title always show.
+  const opts = { getInitialValueInEffect: false };
+  const sm = useMediaQuery("(min-width: 48em)", false, opts);
+  const md = useMediaQuery("(min-width: 62em)", false, opts);
+  const lg = useMediaQuery("(min-width: 75em)", false, opts);
+  const columnVisibility = useMemo(
+    () => ({
+      repo: sm,
+      fields: sm,
+      labels: md,
+      issueTypeName: md,
+      assignees: lg,
+      createdAt: lg,
+      comments: lg,
+    }),
+    [sm, md, lg],
+  );
 
   const columns = useMemo(
     () => [
@@ -116,14 +135,15 @@ export function IssueTable({ issues }: { issues: IssueView[] }) {
   const table = useReactTable({
     data: issues,
     columns,
-    state: { sorting },
+    state: { sorting, columnVisibility },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
 
   return (
-    <Table striped highlightOnHover stickyHeader verticalSpacing="xs">
+    <Table.ScrollContainer minWidth={0}>
+      <Table striped highlightOnHover stickyHeader verticalSpacing="xs">
       <Table.Thead>
         {table.getHeaderGroups().map((hg) => (
           <Table.Tr key={hg.id}>
@@ -151,6 +171,7 @@ export function IssueTable({ issues }: { issues: IssueView[] }) {
           </Table.Tr>
         ))}
       </Table.Tbody>
-    </Table>
+      </Table>
+    </Table.ScrollContainer>
   );
 }
