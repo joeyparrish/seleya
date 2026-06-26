@@ -62,11 +62,11 @@ export function RefreshControls({
         checked={reloadWhenReady}
         onChange={(e) => onReloadWhenReadyChange(e.currentTarget.checked)}
       />
-      <Button size="xs" variant="default" disabled={status?.running} onClick={() => refresh.mutate(false)}>
+      <Button size="xs" variant="light" disabled={status?.running} onClick={() => refresh.mutate(false)}>
         Refresh now
       </Button>
       <Tooltip label="Re-sync everything and reconcile deletions/archived repos">
-        <Button size="xs" variant="subtle" disabled={status?.running} onClick={() => refresh.mutate(true)}>
+        <Button size="xs" variant="default" disabled={status?.running} onClick={() => refresh.mutate(true)}>
           Deep refresh
         </Button>
       </Tooltip>
