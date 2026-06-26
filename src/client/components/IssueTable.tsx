@@ -36,18 +36,18 @@ function mantineColor(c?: string): string {
 export function IssueTable({ issues }: { issues: IssueView[] }) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  // Progressively reveal columns as the screen widens; Type and Title always show.
+  // Progressively reveal columns as the screen widens; Repo and Title always show.
   const opts = { getInitialValueInEffect: false };
   const sm = useMediaQuery("(min-width: 48em)", false, opts);
   const md = useMediaQuery("(min-width: 62em)", false, opts);
   const lg = useMediaQuery("(min-width: 75em)", false, opts);
   const columnVisibility = useMemo(
     () => ({
-      repo: sm,
+      issueTypeName: sm,
       fields: sm,
       labels: md,
-      issueTypeName: md,
-      assignees: lg,
+      assignees: md,
+      isPullRequest: lg,
       createdAt: lg,
       comments: lg,
     }),
