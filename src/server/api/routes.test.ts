@@ -61,7 +61,10 @@ describe("API routes", () => {
     const app = createApp({ db, config, refresh: makeRefresh().controller });
     const res = await request(app).get("/api/tabs");
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ tabs: [{ index: 0, name: "Org" }] });
+    expect(res.body.tabs).toEqual([{ index: 0, name: "Org" }]);
+    // The response carries the current refresh status so the client can pick up
+    // an on-open refresh without a separate poll racing the trigger.
+    expect(res.body.refreshStatus).toMatchObject({ running: false });
   });
 
   it("GET /api/tabs returns tabs in config order, matched by name (survives reorder)", async () => {
@@ -84,12 +87,10 @@ describe("API routes", () => {
     const res = await request(
       createApp({ db, config: reordered, refresh: makeRefresh().controller }),
     ).get("/api/tabs");
-    expect(res.body).toEqual({
-      tabs: [
-        { index: 0, name: "Beta" },
-        { index: 1, name: "Alpha" },
-      ],
-    });
+    expect(res.body.tabs).toEqual([
+      { index: 0, name: "Beta" },
+      { index: 1, name: "Alpha" },
+    ]);
   });
 
   it("GET /api/tabs/:index assembles the tab; 404 for an unknown index", async () => {
@@ -180,7 +181,7 @@ describe("API routes", () => {
     const db = openDatabase(":memory:"); // no membership seeded
     const fresh = makeRefresh({ stale: false });
     const res = await request(createApp({ db, config, refresh: fresh.controller })).get("/api/tabs");
-    expect(res.body).toEqual({ tabs: [] });
+    expect(res.body.tabs).toEqual([]);
     expect(fresh.refresh).toHaveBeenCalledTimes(1);
   });
 });

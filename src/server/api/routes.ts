@@ -68,7 +68,12 @@ export function createApp(deps: AppDeps): express.Express {
     const tabs = deps.config.tabs
       .map((tab, index) => ({ index, name: tab.name }))
       .filter(({ name }) => (byName.get(name)?.length ?? 0) > 0);
-    res.json({ tabs });
+    // Report the refresh status alongside the tabs. The controller sets `running`
+    // synchronously before its first await, so if this request just kicked one
+    // off, getStatus() already reflects it. The client seeds its status query
+    // from this, which closes the race where an independent status poll runs
+    // before the on-open refresh starts and then stops polling.
+    res.json({ tabs, refreshStatus: deps.refresh.getStatus() });
   });
 
   app.get("/api/tabs/:index", (req, res) => {

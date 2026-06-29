@@ -17,6 +17,12 @@ export function RefreshControls({
     queryKey: ["refreshStatus"],
     queryFn: getRefreshStatus,
     refetchInterval: (query) => (query.state.data?.running ? 1500 : false),
+    // The status is seeded from the /api/tabs response (which is what triggers an
+    // on-open refresh) and from the POST below. An independent mount fetch could
+    // resolve with a pre-trigger `running: false` and clobber that seed, so don't
+    // fetch on mount; the interval still polls once a seed reports `running`.
+    refetchOnMount: false,
+    staleTime: Infinity,
   });
 
   // When a refresh transitions running -> idle, the tab list may have changed;
@@ -33,7 +39,9 @@ export function RefreshControls({
 
   const refresh = useMutation({
     mutationFn: (deep: boolean) => postRefresh(deep),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["refreshStatus"] }),
+    // The POST returns the now-running status; seed it directly so polling starts
+    // without a round trip (and without a fetch that could race the running flag).
+    onSuccess: (next) => qc.setQueryData(["refreshStatus"], next),
   });
 
   const running = status?.running ?? false;

@@ -6,7 +6,7 @@ async function getJson<T>(path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-export function getTabs(): Promise<{ tabs: TabSummary[] }> {
+export function getTabs(): Promise<{ tabs: TabSummary[]; refreshStatus: RefreshStatus }> {
   return getJson("/api/tabs");
 }
 

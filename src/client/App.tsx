@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Alert, AppShell, Center, Group, Loader, Tabs, Text, Title } from "@mantine/core";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getTabs } from "./api";
 import { TabPanel } from "./components/TabPanel";
 import { RefreshControls } from "./components/RefreshControls";
@@ -16,9 +16,17 @@ function readHash(): string | null {
 }
 
 export function App() {
+  const qc = useQueryClient();
   const { data, isLoading, error } = useQuery({ queryKey: ["tabs"], queryFn: getTabs });
   const [reloadWhenReady, setReloadWhenReady] = useState(false);
   const [active, setActive] = useState<string | null>(readHash);
+
+  // Seed the refresh-status cache from the tabs response. Loading the tabs is
+  // what triggers an on-open refresh, so this is the one report guaranteed to
+  // reflect that just-started refresh, letting RefreshControls begin polling.
+  useEffect(() => {
+    if (data?.refreshStatus) qc.setQueryData(["refreshStatus"], data.refreshStatus);
+  }, [data?.refreshStatus, qc]);
 
   // Keep the active tab in sync with the URL hash (e.g. browser back/forward).
   useEffect(() => {
