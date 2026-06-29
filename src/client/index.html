@@ -4,6 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Seleya</title>
+    <!-- Resolve the Mantine color scheme before first paint so the page does not
+         flash light/unstyled before the dark theme applies. Mirrors what
+         @mantine/core's ColorSchemeScript emits; inlined here because this is a
+         client-only SPA where rendering that component runs too late. -->
+    <script>
+      try {
+        var stored = window.localStorage.getItem("mantine-color-scheme-value");
+        var scheme =
+          stored === "light" || stored === "dark" || stored === "auto" ? stored : "auto";
+        var computed =
+          scheme !== "auto"
+            ? scheme
+            : window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        document.documentElement.setAttribute("data-mantine-color-scheme", computed);
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
