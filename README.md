@@ -191,6 +191,59 @@ named volume:
 GITHUB_TOKEN=ghp_... docker compose up --build
 ```
 
+## Run as a systemd user service
+
+To keep Seleya running in the background on a Linux machine without Docker, run
+it as a systemd **user** service. A template is provided at
+[deploy/seleya.service](deploy/seleya.service).
+
+First build the project and create the token environment file:
+
+```bash
+npm run build
+
+mkdir -p ~/.config/seleya
+printf 'GITHUB_TOKEN=%s\n' "$(gh auth token)" > ~/.config/seleya/seleya.env
+chmod 600 ~/.config/seleya/seleya.env
+```
+
+Install the unit, editing the two marked paths (`WorkingDirectory` and the
+`node` path in `ExecStart`) for your machine:
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp deploy/seleya.service ~/.config/systemd/user/seleya.service
+${EDITOR:-nano} ~/.config/systemd/user/seleya.service
+```
+
+Then enable and start it:
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now seleya
+```
+
+By default a user service only runs while you are logged in. To keep Seleya
+running across logout and reboots, enable lingering:
+
+```bash
+loginctl enable-linger "$USER"
+```
+
+Check status and follow logs with:
+
+```bash
+systemctl --user status seleya
+journalctl --user -u seleya -f
+```
+
+Seleya reads `config.yaml` once at startup, so after editing the config (or
+rebuilding with `npm run build`) restart the service:
+
+```bash
+systemctl --user restart seleya
+```
+
 ## Development
 
 ```bash

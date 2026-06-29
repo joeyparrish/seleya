@@ -1,0 +1,29 @@
+# Seleya as a systemd user service. See the README ("Run as a systemd user
+# service") for full setup steps. Copy this file to
+# ~/.config/systemd/user/seleya.service and edit the two marked paths below.
+
+[Unit]
+Description=Seleya issue dashboard
+
+[Service]
+Type=simple
+
+# Absolute path to your Seleya checkout, where you ran `npm run build`. Seleya
+# reads ./config.yaml and writes ./seleya.db relative to this directory.
+WorkingDirectory=/path/to/seleya
+
+# Environment file holding your token, e.g. a single line:
+#   GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+# Keep it private (chmod 600). %h expands to your home directory.
+EnvironmentFile=%h/.config/seleya/seleya.env
+
+# Absolute path to node. Find yours with `command -v node`. nvm users will have
+# something like /home/you/.nvm/versions/node/v22.12.0/bin/node (systemd user
+# services do not inherit your shell PATH, so an absolute path is required).
+ExecStart=/usr/bin/node dist/server/server.js
+
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
