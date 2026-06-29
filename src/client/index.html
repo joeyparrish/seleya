@@ -22,6 +22,15 @@
         document.documentElement.setAttribute("data-mantine-color-scheme", computed);
       } catch (e) {}
     </script>
+    <!-- Paint the body background immediately, keyed on the attribute set above.
+         Mantine's stylesheet is render-blocking and downloads after this inline
+         style, so without this the browser shows its default white canvas until
+         the CSS lands. These values mirror Mantine's default body colors
+         (--mantine-color-body: #fff light, dark-7 #242424). -->
+    <style>
+      html { background-color: #fff; }
+      html[data-mantine-color-scheme="dark"] { background-color: #242424; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
