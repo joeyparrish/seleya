@@ -11,6 +11,11 @@ export interface FieldView {
   optionColor?: string;
 }
 
+export interface LabelView {
+  name: string;
+  color: string | null;
+}
+
 export interface IssueView {
   id: string;
   repo: string;
@@ -20,12 +25,13 @@ export interface IssueView {
   state: string;
   author: string | null;
   assignees: string[];
-  labels: string[];
+  labels: LabelView[];
   milestone: string | null;
   createdAt: string;
   updatedAt: string;
   comments: number;
   issueTypeName: string | null;
+  issueTypeColor: string | null;
   url: string;
   fields: FieldView[];
 }

@@ -29,6 +29,7 @@ CREATE INDEX IF NOT EXISTS idx_issues_updated ON issues(updated_at);
 CREATE TABLE IF NOT EXISTS issue_labels (
   issue_id TEXT NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
   label TEXT NOT NULL,
+  color TEXT,
   PRIMARY KEY (issue_id, label)
 );
 CREATE INDEX IF NOT EXISTS idx_issue_labels_label ON issue_labels(label);

@@ -11,6 +11,11 @@ export interface FieldView {
   optionColor?: string;
 }
 
+export interface LabelView {
+  name: string;
+  color: string | null;
+}
+
 export interface IssueView {
   id: string;
   repo: string;
@@ -20,12 +25,13 @@ export interface IssueView {
   state: string;
   author: string | null;
   assignees: string[];
-  labels: string[];
+  labels: LabelView[];
   milestone: string | null;
   createdAt: string;
   updatedAt: string;
   comments: number;
   issueTypeName: string | null;
+  issueTypeColor: string | null;
   url: string;
   fields: FieldView[];
 }
@@ -55,14 +61,15 @@ interface JoinedIssueRow {
   updated_at: string;
   comments: number;
   issue_type_name: string | null;
+  issue_type_color: string | null;
 }
 
 function hydrate(db: Database.Database, r: JoinedIssueRow): IssueView {
   const labels = (
     db
-      .prepare("SELECT label FROM issue_labels WHERE issue_id = ? ORDER BY label")
-      .all(r.id) as Array<{ label: string }>
-  ).map((x) => x.label);
+      .prepare("SELECT label, color FROM issue_labels WHERE issue_id = ? ORDER BY label")
+      .all(r.id) as Array<{ label: string; color: string | null }>
+  ).map((x) => ({ name: x.label, color: x.color }));
 
   const fieldRows = db
     .prepare(
@@ -103,6 +110,7 @@ function hydrate(db: Database.Database, r: JoinedIssueRow): IssueView {
     updatedAt: r.updated_at,
     comments: r.comments,
     issueTypeName: r.issue_type_name,
+    issueTypeColor: r.issue_type_color,
     url: `https://github.com/${r.repo_owner}/${r.repo_name}/${isPullRequest ? "pull" : "issues"}/${r.number}`,
     fields,
   };
@@ -122,8 +130,10 @@ function buildGroup(
       `SELECT issues.id, issues.number, issues.title, issues.is_pull_request, issues.state,
               issues.author, issues.assignees, issues.milestone, issues.created_at,
               issues.updated_at, issues.comments, issues.issue_type_name,
+              issue_types.color AS issue_type_color,
               repos.owner AS repo_owner, repos.name AS repo_name
        FROM issues JOIN repos ON repos.id = issues.repo_id
+       LEFT JOIN issue_types ON issue_types.id = issues.issue_type_id
        WHERE ${where}
        ORDER BY issues.updated_at DESC`,
     )

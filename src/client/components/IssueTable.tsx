@@ -29,8 +29,15 @@ const COLOR_MAP: Record<string, string> = {
   GRAY: "gray",
 };
 
-function mantineColor(c?: string): string {
+function mantineColor(c?: string | null): string {
   return c ? (COLOR_MAP[c.toUpperCase()] ?? "gray") : "gray";
+}
+
+// GitHub label colors are raw 6-hex strings (no leading "#"), unlike the named
+// colors used by issue types and fields. Render them directly so labels match
+// GitHub; autoContrast picks readable text. Missing color falls back to gray.
+function labelColor(hex: string | null): string {
+  return hex ? `#${hex}` : "gray";
 }
 
 export function IssueTable({ issues }: { issues: IssueView[] }) {
@@ -84,7 +91,7 @@ export function IssueTable({ issues }: { issues: IssueView[] }) {
         header: "Issue Type",
         cell: (c) =>
           c.getValue() ? (
-            <Badge size="xs" variant="outline">
+            <Badge size="xs" variant="outline" color={mantineColor(c.row.original.issueTypeColor)}>
               {c.getValue()}
             </Badge>
           ) : null,
@@ -95,8 +102,8 @@ export function IssueTable({ issues }: { issues: IssueView[] }) {
         cell: (c) => (
           <Group gap={4}>
             {c.row.original.labels.map((l) => (
-              <Badge key={l} size="xs" variant="light" color="gray">
-                {l}
+              <Badge key={l.name} size="xs" variant="filled" color={labelColor(l.color)} autoContrast>
+                {l.name}
               </Badge>
             ))}
           </Group>

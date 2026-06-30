@@ -40,7 +40,10 @@ beforeEach(() => {
     issue({
       id: "I_1",
       repoId: "R_1",
-      labels: ["bug", "triaged"],
+      labels: [
+        { name: "bug", color: "d73a4a" },
+        { name: "triaged", color: null },
+      ],
       assignees: ["alice", "bob"],
       author: "Octocat",
       milestone: "v1",
@@ -54,7 +57,7 @@ beforeEach(() => {
     issue({
       id: "I_3",
       repoId: "R_2",
-      labels: ["bug"],
+      labels: [{ name: "bug", color: "d73a4a" }],
       assignees: ["carol"],
       author: "alice",
       milestone: "v2",

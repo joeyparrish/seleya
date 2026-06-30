@@ -50,10 +50,10 @@ const ISSUE_NODE = `
   id number title state createdAt updatedAt
   author { login }
   assignees(first: 20) { nodes { login } }
-  labels(first: 50) { nodes { name } }
+  labels(first: 50) { nodes { name color } }
   milestone { title }
   comments { totalCount }
-  issueType { id name }
+  issueType { id name color }
   issueFieldValues(first: 50) {
     nodes {
       __typename
@@ -68,7 +68,7 @@ const ISSUE_NODE = `
 const PR_NODE = `id number title state createdAt updatedAt
   author { login }
   assignees(first: 20) { nodes { login } }
-  labels(first: 50) { nodes { name } }
+  labels(first: 50) { nodes { name color } }
   milestone { title }
   comments { totalCount }`;
 
@@ -124,12 +124,14 @@ function mapIssue(n: any, isPullRequest: boolean): FetchedIssue {
     state: n.state,
     author: n.author?.login ?? null,
     assignees: (n.assignees?.nodes ?? []).map((a: any) => a.login),
-    labels: (n.labels?.nodes ?? []).map((l: any) => l.name),
+    labels: (n.labels?.nodes ?? []).map((l: any) => ({ name: l.name, color: l.color ?? null })),
     milestone: n.milestone?.title ?? null,
     createdAt: n.createdAt,
     updatedAt: n.updatedAt,
     comments: n.comments?.totalCount ?? 0,
-    issueType: n.issueType ? { id: n.issueType.id, name: n.issueType.name } : null,
+    issueType: n.issueType
+      ? { id: n.issueType.id, name: n.issueType.name, color: n.issueType.color ?? null }
+      : null,
     fieldValues: isPullRequest ? [] : mapFieldValues(n.issueFieldValues?.nodes ?? []),
   };
 }

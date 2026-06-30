@@ -1,5 +1,10 @@
 import type Database from "better-sqlite3";
 
+export interface LabelRef {
+  name: string;
+  color: string | null;
+}
+
 export interface IssueRecord {
   id: string;
   repoId: string;
@@ -9,7 +14,7 @@ export interface IssueRecord {
   state: string;
   author: string | null;
   assignees: string[];
-  labels: string[];
+  labels: LabelRef[];
   milestone: string | null;
   createdAt: string;
   updatedAt: string;
@@ -67,8 +72,10 @@ export function upsertIssue(db: Database.Database, issue: IssueRecord): void {
     });
 
     db.prepare("DELETE FROM issue_labels WHERE issue_id=?").run(i.id);
-    const insLabel = db.prepare("INSERT INTO issue_labels (issue_id, label) VALUES (?, ?)");
-    for (const label of i.labels) insLabel.run(i.id, label);
+    const insLabel = db.prepare(
+      "INSERT INTO issue_labels (issue_id, label, color) VALUES (?, ?, ?)",
+    );
+    for (const label of i.labels) insLabel.run(i.id, label.name, label.color);
   });
   tx(issue);
 }
@@ -88,10 +95,10 @@ export function getIssue(db: Database.Database, id: string): IssueRecord | undef
   const row = db.prepare("SELECT * FROM issues WHERE id=?").get(id) as RawIssue | undefined;
   if (!row) return undefined;
   const labels = (
-    db.prepare("SELECT label FROM issue_labels WHERE issue_id=? ORDER BY label").all(id) as Array<{
-      label: string;
-    }>
-  ).map((r) => r.label);
+    db
+      .prepare("SELECT label, color FROM issue_labels WHERE issue_id=? ORDER BY label")
+      .all(id) as Array<{ label: string; color: string | null }>
+  ).map((r) => ({ name: r.label, color: r.color }));
   return {
     id: row.id,
     repoId: row.repo_id,

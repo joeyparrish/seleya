@@ -22,6 +22,11 @@ export interface FetchedFieldValue {
   optionId?: string;
 }
 
+export interface FetchedLabel {
+  name: string;
+  color: string | null;
+}
+
 export interface FetchedIssue {
   id: string;
   number: number;
@@ -30,12 +35,12 @@ export interface FetchedIssue {
   state: string;
   author: string | null;
   assignees: string[];
-  labels: string[];
+  labels: FetchedLabel[];
   milestone: string | null;
   createdAt: string;
   updatedAt: string;
   comments: number;
-  issueType: { id: string; name: string } | null;
+  issueType: { id: string; name: string; color: string | null } | null;
   fieldValues: FetchedFieldValue[];
 }
 

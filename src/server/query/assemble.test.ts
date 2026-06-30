@@ -3,7 +3,7 @@ import type Database from "better-sqlite3";
 import { openDatabase } from "../db/database.js";
 import { upsertRepo } from "../db/repos.js";
 import { upsertIssue, type IssueRecord } from "../db/issues.js";
-import { upsertFieldDefinition, setIssueFieldValues } from "../db/fields.js";
+import { upsertFieldDefinition, setIssueFieldValues, upsertIssueType } from "../db/fields.js";
 import { replaceTabMemberships } from "../db/membership.js";
 import { assembleTab, assembleAllTabs } from "./assemble.js";
 import type { Config, Tab } from "../config/schema.js";
@@ -37,7 +37,20 @@ beforeEach(() => {
   upsertRepo(db, { id: "R_1", owner: "o", name: "n", isFork: false });
   upsertRepo(db, { id: "R_2", owner: "o", name: "m", isFork: false });
 
-  upsertIssue(db, issue({ id: "I_1", repoId: "R_1", number: 1, labels: ["bug"], updatedAt: "2026-06-20T00:00:00Z" }));
+  upsertIssueType(db, { id: "IT_1", name: "Bug", color: "RED", description: null });
+
+  upsertIssue(
+    db,
+    issue({
+      id: "I_1",
+      repoId: "R_1",
+      number: 1,
+      labels: [{ name: "bug", color: "d73a4a" }],
+      issueTypeId: "IT_1",
+      issueTypeName: "Bug",
+      updatedAt: "2026-06-20T00:00:00Z",
+    }),
+  );
   upsertIssue(db, issue({ id: "I_2", repoId: "R_1", number: 2, isPullRequest: true, updatedAt: "2026-06-22T00:00:00Z" }));
   upsertIssue(db, issue({ id: "I_3", repoId: "R_2", number: 3, updatedAt: "2026-06-21T00:00:00Z" }));
 
@@ -92,6 +105,14 @@ describe("assembleTab", () => {
     expect(i1.fields).toEqual([
       { name: "Priority", dataType: "single_select", value: "High", optionColor: "RED" },
     ]);
+  });
+
+  it("attaches labels with their colors and the issue type color", () => {
+    const view = assembleTab(db, membership, tab({}), now);
+    const i1 = view.groups[0]!.issues.find((i) => i.id === "I_1")!;
+    expect(i1.labels).toEqual([{ name: "bug", color: "d73a4a" }]);
+    expect(i1.issueTypeName).toBe("Bug");
+    expect(i1.issueTypeColor).toBe("RED");
   });
 });
 

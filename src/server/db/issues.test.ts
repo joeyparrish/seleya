@@ -22,7 +22,10 @@ const base: IssueRecord = {
   state: "OPEN",
   author: "alice",
   assignees: ["bob"],
-  labels: ["bug", "triaged"],
+  labels: [
+    { name: "bug", color: "d73a4a" },
+    { name: "triaged", color: null },
+  ],
   milestone: "v1",
   createdAt: "2026-01-01T00:00:00Z",
   updatedAt: "2026-01-02T00:00:00Z",
@@ -43,8 +46,8 @@ describe("issue store", () => {
     const db = openDatabase(":memory:");
     seedRepo(db);
     upsertIssue(db, base);
-    upsertIssue(db, { ...base, labels: ["wontfix"] });
-    expect(getIssue(db, "I_1")?.labels).toEqual(["wontfix"]);
+    upsertIssue(db, { ...base, labels: [{ name: "wontfix", color: "ffffff" }] });
+    expect(getIssue(db, "I_1")?.labels).toEqual([{ name: "wontfix", color: "ffffff" }]);
   });
 
   it("deletes an issue and cascades its labels", () => {

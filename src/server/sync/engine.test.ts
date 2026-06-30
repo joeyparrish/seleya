@@ -24,9 +24,9 @@ function fakeClient(over: Partial<GitHubClient>): GitHubClient {
 
 const openIssue: FetchedIssue = {
   id: "I_1", number: 1, title: "open", isPullRequest: false, state: "OPEN",
-  author: "a", assignees: [], labels: ["bug"], milestone: null,
+  author: "a", assignees: [], labels: [{ name: "bug", color: "d73a4a" }], milestone: null,
   createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-02T00:00:00Z",
-  comments: 0, issueType: { id: "IT_1", name: "Bug" },
+  comments: 0, issueType: { id: "IT_1", name: "Bug", color: "RED" },
   fieldValues: [{ fieldName: "Priority", dataType: "single_select", valueText: "High", optionId: "IFSSO_1" }],
 };
 
@@ -51,7 +51,12 @@ describe("syncRepo", () => {
     await syncRepo(db, client, repo, { now: new Date("2026-01-02T01:00:00Z") });
 
     expect(getIssue(db, "I_1")?.title).toBe("open");
+    expect(getIssue(db, "I_1")?.labels).toEqual([{ name: "bug", color: "d73a4a" }]);
     expect(getFieldValues(db, "I_1")[0]?.valueText).toBe("High");
+    const type = db.prepare("SELECT color FROM issue_types WHERE id='IT_1'").get() as
+      | { color: string | null }
+      | undefined;
+    expect(type?.color).toBe("RED");
     const state = getSyncState(db, "R_1");
     expect(state?.status).toBe("idle");
     expect(state?.lastSyncedAt).toBe("2026-01-02T01:00:00.000Z");

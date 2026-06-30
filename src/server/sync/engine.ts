@@ -58,7 +58,7 @@ export function applyFetchedIssues(
         upsertIssueType(db, {
           id: f.issueType.id,
           name: f.issueType.name,
-          color: null,
+          color: f.issueType.color,
           description: null,
         });
       }
