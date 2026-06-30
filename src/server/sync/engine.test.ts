@@ -15,6 +15,7 @@ function fakeClient(over: Partial<GitHubClient>): GitHubClient {
     listOrgRepos: async () => [],
     listUserRepos: async () => [],
     fetchIssuesUpdatedSince: async () => [],
+    fetchOpenIssues: async () => [],
     discoverIssueTypes: async () => [],
     discoverFields: async () => [],
     getRepo: async () => null,

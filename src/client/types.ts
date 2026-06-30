@@ -54,6 +54,7 @@ export interface TabSummary {
 export interface RefreshStatus {
   running: boolean;
   deep: boolean;
+  phase: "sync" | "reconcile" | null;
   startedAt: string | null;
   finishedAt: string | null;
   total: number;

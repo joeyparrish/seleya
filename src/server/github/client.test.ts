@@ -103,6 +103,37 @@ describe("GitHubClient", () => {
     expect(issues[0]?.assignees).toEqual(["bob"]);
   });
 
+  it("fetches only open issues/PRs (states:OPEN) for reconciliation", async () => {
+    const empty = { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } };
+    const queries: string[] = [];
+    const request = vi.fn(async (q: string) => {
+      queries.push(q);
+      return q.includes("pullRequests")
+        ? { repository: { pullRequests: empty } }
+        : { repository: { issues: empty } };
+    }) as unknown as GraphQLRequest;
+
+    const client = createGitHubClient(request);
+    await client.fetchOpenIssues("o", "n");
+
+    expect(queries).toHaveLength(2);
+    expect(queries.every((q) => q.includes("states:[OPEN]"))).toBe(true);
+  });
+
+  it("does not restrict by state for the incremental delta", async () => {
+    const empty = { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } };
+    const queries: string[] = [];
+    const request = vi.fn(async (q: string) => {
+      queries.push(q);
+      return q.includes("pullRequests")
+        ? { repository: { pullRequests: empty } }
+        : { repository: { issues: empty } };
+    }) as unknown as GraphQLRequest;
+
+    await createGitHubClient(request).fetchIssuesUpdatedSince("o", "n", null);
+    expect(queries.some((q) => q.includes("states:[OPEN]"))).toBe(false);
+  });
+
   it("fetches a single repo by owner/name, returning null when absent", async () => {
     const present = vi.fn(async () => ({
       repository: { id: "R_9", name: "foo", isFork: false, isArchived: false, owner: { login: "acme" } },

@@ -26,6 +26,7 @@ function makeRefresh(opts: { running?: boolean; stale?: boolean } = {}) {
   const status: RefreshStatus = {
     running: opts.running ?? false,
     deep: false,
+    phase: null,
     startedAt: null,
     finishedAt: null,
     total: 1,

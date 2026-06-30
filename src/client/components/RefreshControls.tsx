@@ -45,8 +45,10 @@ export function RefreshControls({
   });
 
   const running = status?.running ?? false;
+  const phaseLabel =
+    status?.phase === "reconcile" ? "Reconciling" : status?.deep ? "Deep refreshing" : "Refreshing";
   const statusText = running
-    ? `${status?.deep ? "Deep refreshing" : "Refreshing"} ${status?.completed}/${status?.total}…`
+    ? `${phaseLabel} ${status?.completed}/${status?.total}…`
     : status?.lastError
       ? "Last refresh failed"
       : status?.finishedAt

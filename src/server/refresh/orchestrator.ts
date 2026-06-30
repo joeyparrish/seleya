@@ -1,6 +1,7 @@
 import type Database from "better-sqlite3";
 import type { Config } from "../config/schema.js";
 import type { GitHubClient } from "../github/client.js";
+import type { RepoInfo } from "../github/types.js";
 import { upsertRepo, deleteRepo, listRepos } from "../db/repos.js";
 import { getSyncState } from "../db/syncState.js";
 import { replaceTabMemberships } from "../db/membership.js";
@@ -8,9 +9,14 @@ import { resolveRepos } from "../resolver/repoResolver.js";
 import { isStale, syncStaleRepos } from "../sync/engine.js";
 import { reconcileRepoIssues } from "./reconcile.js";
 
+// "sync" is the per-repo incremental fetch; "reconcile" is the deep-refresh
+// second pass over every repo. Each phase counts completed/total independently.
+export type RefreshPhase = "sync" | "reconcile";
+
 export interface RefreshStatus {
   running: boolean;
   deep: boolean;
+  phase: RefreshPhase | null;
   startedAt: string | null;
   finishedAt: string | null;
   total: number;
@@ -24,6 +30,7 @@ function idleStatus(): RefreshStatus {
   return {
     running: false,
     deep: false,
+    phase: null,
     startedAt: null,
     finishedAt: null,
     total: 0,
@@ -67,7 +74,13 @@ export class RefreshController {
     // only syncs repos past their TTL.
     const force = (opts?.force ?? false) || deep;
     const now = opts?.now ?? new Date();
-    this.status = { ...idleStatus(), running: true, deep, startedAt: now.toISOString() };
+    this.status = {
+      ...idleStatus(),
+      running: true,
+      deep,
+      phase: "sync",
+      startedAt: now.toISOString(),
+    };
 
     try {
       const { tabs, allRepos } = await resolveRepos(this.config, this.client);
@@ -107,14 +120,48 @@ export class RefreshController {
         },
       });
 
-      if (deep) {
-        for (const r of allRepos) await reconcileRepoIssues(this.db, this.client, r);
-      }
+      if (deep) await this.reconcileAll(allRepos);
     } catch (err) {
       this.status.lastError = err instanceof Error ? err.message : String(err);
     } finally {
       this.status.running = false;
+      this.status.phase = null;
       this.status.finishedAt = new Date().toISOString();
     }
+  }
+
+  /**
+   * Deep-refresh second pass: reconcile every repo against its full upstream open
+   * set. Runs with the same bounded concurrency as the sync phase, isolates
+   * per-repo errors so one failure does not sink the batch, and drives the same
+   * completed/total/currentRepos counters (reset for this phase) so the progress
+   * indicator keeps moving past the sync phase rather than freezing at N/N.
+   */
+  private async reconcileAll(repos: RepoInfo[]): Promise<void> {
+    this.status.phase = "reconcile";
+    this.status.completed = 0;
+    this.status.total = repos.length;
+    this.status.currentRepos = [];
+
+    const workerCount = Math.max(1, Math.min(this.config.syncConcurrency, repos.length));
+    let next = 0;
+    const worker = async (): Promise<void> => {
+      while (next < repos.length) {
+        const repo = repos[next++];
+        if (!repo) break;
+        const label = `${repo.owner}/${repo.name}`;
+        this.status.currentRepos.push(label);
+        try {
+          await reconcileRepoIssues(this.db, this.client, repo);
+        } catch (err) {
+          this.status.errors++;
+          this.status.lastError = err instanceof Error ? err.message : String(err);
+        } finally {
+          this.status.currentRepos = this.status.currentRepos.filter((x) => x !== label);
+          this.status.completed++;
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: workerCount }, () => worker()));
   }
 }

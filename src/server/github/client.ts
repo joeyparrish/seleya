@@ -35,6 +35,7 @@ export interface GitHubClient {
     name: string,
     since: string | null,
   ): Promise<FetchedIssue[]>;
+  fetchOpenIssues(owner: string, name: string): Promise<FetchedIssue[]>;
   discoverIssueTypes(owner: string, name: string): Promise<IssueTypeDiscovery[]>;
   discoverFields(owner: string, name: string): Promise<FieldDiscovery[]>;
 }
@@ -162,13 +163,19 @@ export function createGitHubClient(request: GraphQLRequest): GitHubClient {
     name: string,
     since: string | null,
     connection: "issues" | "pullRequests",
+    openOnly = false,
   ): Promise<FetchedIssue[]> {
     const out: FetchedIssue[] = [];
     let cursor: string | null = null;
     const nodeBody = connection === "issues" ? ISSUE_NODE : PR_NODE;
+    // Restricting to states:[OPEN] lets a full (since=null) reconcile fetch skip
+    // the entire closed-issue history, which it would otherwise download only to
+    // discard. The incremental delta keeps no filter: it must see closed items in
+    // the window to delete them locally.
+    const states = openOnly ? "states:[OPEN], " : "";
     const query = `query($owner:String!, $name:String!, $cursor:String){
       repository(owner:$owner, name:$name){
-        ${connection}(first:50, after:$cursor, orderBy:{field:UPDATED_AT, direction:DESC}){
+        ${connection}(first:50, after:$cursor, ${states}orderBy:{field:UPDATED_AT, direction:DESC}){
           nodes { ${nodeBody} }
           pageInfo { hasNextPage endCursor }
         }
@@ -203,6 +210,12 @@ export function createGitHubClient(request: GraphQLRequest): GitHubClient {
     async fetchIssuesUpdatedSince(owner, name, since) {
       const issues = await pageIssues(owner, name, since, "issues");
       const prs = await pageIssues(owner, name, since, "pullRequests");
+      return [...issues, ...prs];
+    },
+
+    async fetchOpenIssues(owner, name) {
+      const issues = await pageIssues(owner, name, null, "issues", true);
+      const prs = await pageIssues(owner, name, null, "pullRequests", true);
       return [...issues, ...prs];
     },
 

@@ -19,6 +19,7 @@ function fakeClient(over: Partial<GitHubClient> = {}): GitHubClient {
     listUserRepos: async () => [],
     getRepo: async () => null,
     fetchIssuesUpdatedSince: async () => [],
+    fetchOpenIssues: async () => [],
     discoverIssueTypes: async () => [],
     discoverFields: async () => [],
     ...over,
@@ -96,6 +97,38 @@ describe("RefreshController", () => {
 
     await c.refresh({ force: true, now: new Date("2026-01-01T00:01:00Z") }); // forced -> re-sync
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("deep refresh reconciles every repo and isolates per-repo failures", async () => {
+    const db = openDatabase(":memory:");
+    const fetchOpenIssues = vi.fn(async (_owner: string, name: string) => {
+      if (name === "b") throw new Error("boom");
+      return [];
+    });
+    const client = fakeClient({
+      listOrgRepos: async () => [repoInfo("R_1", "a"), repoInfo("R_2", "b")],
+      fetchOpenIssues,
+    });
+    const c = new RefreshController(db, client, orgTab);
+
+    await c.refresh({ deep: true });
+
+    expect(fetchOpenIssues).toHaveBeenCalledTimes(2); // both repos reconciled despite one throwing
+    const s = c.getStatus();
+    // The reconcile phase resets the counters and runs to completion for all repos.
+    expect(s).toMatchObject({ running: false, phase: null, total: 2, completed: 2, errors: 1 });
+    expect(s.lastError).toBe("boom");
+  });
+
+  it("a non-deep refresh skips reconciliation entirely", async () => {
+    const db = openDatabase(":memory:");
+    const fetchOpenIssues = vi.fn(async () => []);
+    const client = fakeClient({
+      listOrgRepos: async () => [repoInfo("R_1", "a")],
+      fetchOpenIssues,
+    });
+    await new RefreshController(db, client, orgTab).refresh();
+    expect(fetchOpenIssues).not.toHaveBeenCalled();
   });
 
   it("is single-flight: a concurrent refresh is a no-op", async () => {

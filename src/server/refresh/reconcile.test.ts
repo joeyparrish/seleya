@@ -13,7 +13,8 @@ function fakeClient(fetched: FetchedIssue[]): GitHubClient {
     listOrgRepos: async () => [],
     listUserRepos: async () => [],
     getRepo: async () => null,
-    fetchIssuesUpdatedSince: async () => fetched,
+    fetchIssuesUpdatedSince: async () => [],
+    fetchOpenIssues: async () => fetched,
     discoverIssueTypes: async () => [],
     discoverFields: async () => [],
   };
