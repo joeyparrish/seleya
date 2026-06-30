@@ -10,6 +10,10 @@ newer beta issue features (issue Types and custom Fields such as Priority and
 Effort) that the normal REST API does not expose, caches everything locally in
 SQLite, and refreshes on demand.
 
+![Seleya dashboard showing open issues and pull requests from several
+repositories in one table, with colored issue type, label, and field badges
+matching their GitHub colors.](docs/screenshot.png)
+
 ## Security: please read this first
 
 Seleya has **no built-in authentication**. By default it binds to `127.0.0.1`
