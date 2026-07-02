@@ -1,4 +1,7 @@
-# Seleya
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/seleya-wordmark-dark.svg" />
+  <img alt="Seleya" src="docs/seleya-wordmark-light.svg" width="280" />
+</picture>
 
 Seleya is a self-hosted dashboard that gathers open issues and pull requests
 from many GitHub repositories and organizations into one web view, organized
