@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, AppShell, Center, Group, Loader, Tabs, Text, Title } from "@mantine/core";
+import { Alert, AppShell, Center, Image, Group, Loader, Tabs, Text, Title } from "@mantine/core";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getTabs } from "./api";
 import { TabPanel } from "./components/TabPanel";
@@ -49,7 +49,10 @@ export function App() {
     <AppShell header={{ height: 56 }} padding="md">
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between" wrap="nowrap">
-          <Title order={3}>Seleya</Title>
+          <Group justify="flex-start" gap="xs" h="100%">
+            <Image h="100%" w="auto" fit="contain" src="favicon.svg" />
+            <Title order={1}>Seleya</Title>
+          </Group>
           <RefreshControls
             reloadWhenReady={reloadWhenReady}
             onReloadWhenReadyChange={setReloadWhenReady}
