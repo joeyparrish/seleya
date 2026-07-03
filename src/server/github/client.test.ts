@@ -103,6 +103,33 @@ describe("GitHubClient", () => {
     expect(issues[0]?.assignees).toEqual(["bob"]);
   });
 
+  it("maps PR draft state and never marks issues as draft", async () => {
+    const empty = { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } };
+    const prNode = {
+      id: "PR_1", number: 5, title: "wip", state: "OPEN", isDraft: true,
+      createdAt: "2026-06-01T00:00:00Z", updatedAt: "2026-06-02T00:00:00Z",
+      author: { login: "carol" }, assignees: { nodes: [] }, labels: { nodes: [] },
+      milestone: null, comments: { totalCount: 0 },
+    };
+    const queries: string[] = [];
+    const request = vi.fn(async (q: string) => {
+      queries.push(q);
+      return q.includes("pullRequests")
+        ? { repository: { pullRequests: { nodes: [prNode], pageInfo: { hasNextPage: false, endCursor: null } } } }
+        : { repository: { issues: empty } };
+    }) as unknown as GraphQLRequest;
+
+    const client = createGitHubClient(request);
+    const issues = await client.fetchIssuesUpdatedSince("o", "n", null);
+
+    const pr = issues.find((i) => i.id === "PR_1");
+    expect(pr?.isPullRequest).toBe(true);
+    expect(pr?.isDraft).toBe(true);
+    // The issues query must not request isDraft; issues have no such field.
+    const issuesQuery = queries.find((q) => !q.includes("pullRequests")) as string;
+    expect(issuesQuery.includes("isDraft")).toBe(false);
+  });
+
   it("fetches only open issues/PRs (states:OPEN) for reconciliation", async () => {
     const empty = { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } };
     const queries: string[] = [];

@@ -32,6 +32,7 @@ export interface FetchedIssue {
   number: number;
   title: string;
   isPullRequest: boolean;
+  isDraft: boolean;
   state: string;
   author: string | null;
   assignees: string[];

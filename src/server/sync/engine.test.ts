@@ -24,7 +24,7 @@ function fakeClient(over: Partial<GitHubClient>): GitHubClient {
 }
 
 const openIssue: FetchedIssue = {
-  id: "I_1", number: 1, title: "open", isPullRequest: false, state: "OPEN",
+  id: "I_1", number: 1, title: "open", isPullRequest: false, isDraft: false, state: "OPEN",
   author: "a", assignees: [], labels: [{ name: "bug", color: "d73a4a" }], milestone: null,
   createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-02T00:00:00Z",
   comments: 0, issueType: { id: "IT_1", name: "Bug", color: "RED" },

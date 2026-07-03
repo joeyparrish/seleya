@@ -66,7 +66,7 @@ const ISSUE_NODE = `
     }
   }`;
 
-const PR_NODE = `id number title state createdAt updatedAt
+const PR_NODE = `id number title state isDraft createdAt updatedAt
   author { login }
   assignees(first: 20) { nodes { login } }
   labels(first: 50) { nodes { name color } }
@@ -122,6 +122,7 @@ function mapIssue(n: any, isPullRequest: boolean): FetchedIssue {
     number: n.number,
     title: n.title,
     isPullRequest,
+    isDraft: isPullRequest ? (n.isDraft ?? false) : false,
     state: n.state,
     author: n.author?.login ?? null,
     assignees: (n.assignees?.nodes ?? []).map((a: any) => a.login),

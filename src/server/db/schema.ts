@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS issues (
   number INTEGER NOT NULL,
   title TEXT NOT NULL,
   is_pull_request INTEGER NOT NULL,
+  is_draft INTEGER NOT NULL DEFAULT 0,
   state TEXT NOT NULL,
   author TEXT,
   assignees TEXT NOT NULL DEFAULT '[]',

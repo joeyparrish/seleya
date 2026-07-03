@@ -27,6 +27,7 @@ function toRecord(repoId: string, f: FetchedIssue): IssueRecord {
     number: f.number,
     title: f.title,
     isPullRequest: f.isPullRequest,
+    isDraft: f.isDraft,
     state: f.state,
     author: f.author,
     assignees: f.assignees,

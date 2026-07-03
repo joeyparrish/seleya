@@ -22,4 +22,7 @@ function migrate(db: Database.Database): void {
   if (!columnExists(db, "issue_labels", "color")) {
     db.exec("ALTER TABLE issue_labels ADD COLUMN color TEXT");
   }
+  if (!columnExists(db, "issues", "is_draft")) {
+    db.exec("ALTER TABLE issues ADD COLUMN is_draft INTEGER NOT NULL DEFAULT 0");
+  }
 }

@@ -82,9 +82,16 @@ export function IssueTable({ issues }: { issues: IssueView[] }) {
       col.accessor("title", {
         header: "Title",
         cell: (c) => (
-          <Anchor href={c.row.original.url} target="_blank" size="sm">
-            #{c.row.original.number} {c.getValue()}
-          </Anchor>
+          <Group gap={6} wrap="nowrap" align="center">
+            {c.row.original.isDraft && (
+              <Badge size="xs" variant="light" color="gray">
+                Draft
+              </Badge>
+            )}
+            <Anchor href={c.row.original.url} target="_blank" size="sm">
+              #{c.row.original.number} {c.getValue()}
+            </Anchor>
+          </Group>
         ),
       }),
       col.accessor("issueTypeName", {

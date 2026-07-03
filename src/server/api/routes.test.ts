@@ -46,7 +46,7 @@ function makeRefresh(opts: { running?: boolean; stale?: boolean } = {}) {
 function seed(db: Database.Database) {
   upsertRepo(db, { id: "R_1", owner: "o", name: "a", isFork: false });
   const issue: IssueRecord = {
-    id: "I_1", repoId: "R_1", number: 1, title: "hello", isPullRequest: false, state: "OPEN",
+    id: "I_1", repoId: "R_1", number: 1, title: "hello", isPullRequest: false, isDraft: false, state: "OPEN",
     author: "me", assignees: [], labels: [], milestone: null,
     createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-02T00:00:00Z",
     comments: 0, issueTypeId: null, issueTypeName: null,

@@ -19,6 +19,7 @@ const base: IssueRecord = {
   number: 7,
   title: "Bug",
   isPullRequest: false,
+  isDraft: false,
   state: "OPEN",
   author: "alice",
   assignees: ["bob"],

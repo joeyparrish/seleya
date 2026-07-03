@@ -11,6 +11,7 @@ export interface IssueRecord {
   number: number;
   title: string;
   isPullRequest: boolean;
+  isDraft: boolean;
   state: string;
   author: string | null;
   assignees: string[];
@@ -29,6 +30,7 @@ interface RawIssue {
   number: number;
   title: string;
   is_pull_request: number;
+  is_draft: number;
   state: string;
   author: string | null;
   assignees: string;
@@ -44,14 +46,14 @@ export function upsertIssue(db: Database.Database, issue: IssueRecord): void {
   const tx = db.transaction((i: IssueRecord) => {
     db.prepare(
       `INSERT INTO issues
-         (id, repo_id, number, title, is_pull_request, state, author, assignees,
+         (id, repo_id, number, title, is_pull_request, is_draft, state, author, assignees,
           milestone, created_at, updated_at, comments, issue_type_id, issue_type_name)
        VALUES
-         (@id, @repo_id, @number, @title, @is_pull_request, @state, @author, @assignees,
+         (@id, @repo_id, @number, @title, @is_pull_request, @is_draft, @state, @author, @assignees,
           @milestone, @created_at, @updated_at, @comments, @issue_type_id, @issue_type_name)
        ON CONFLICT(id) DO UPDATE SET
          repo_id=@repo_id, number=@number, title=@title, is_pull_request=@is_pull_request,
-         state=@state, author=@author, assignees=@assignees, milestone=@milestone,
+         is_draft=@is_draft, state=@state, author=@author, assignees=@assignees, milestone=@milestone,
          created_at=@created_at, updated_at=@updated_at, comments=@comments,
          issue_type_id=@issue_type_id, issue_type_name=@issue_type_name`,
     ).run({
@@ -60,6 +62,7 @@ export function upsertIssue(db: Database.Database, issue: IssueRecord): void {
       number: i.number,
       title: i.title,
       is_pull_request: i.isPullRequest ? 1 : 0,
+      is_draft: i.isDraft ? 1 : 0,
       state: i.state,
       author: i.author,
       assignees: JSON.stringify(i.assignees),
@@ -105,6 +108,7 @@ export function getIssue(db: Database.Database, id: string): IssueRecord | undef
     number: row.number,
     title: row.title,
     isPullRequest: row.is_pull_request === 1,
+    isDraft: row.is_draft === 1,
     state: row.state,
     author: row.author,
     assignees: JSON.parse(row.assignees) as string[],

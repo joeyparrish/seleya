@@ -26,6 +26,7 @@ function open(id: string, number: number): FetchedIssue {
     number,
     title: `#${number}`,
     isPullRequest: false,
+    isDraft: false,
     state: "OPEN",
     author: null,
     assignees: [],

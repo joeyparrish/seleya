@@ -14,6 +14,7 @@ function issue(over: Partial<IssueRecord> & Pick<IssueRecord, "id" | "repoId">):
     number: 1,
     title: "t",
     isPullRequest: false,
+    isDraft: false,
     state: "OPEN",
     author: null,
     assignees: [],

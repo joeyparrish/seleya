@@ -22,6 +22,7 @@ export interface IssueView {
   number: number;
   title: string;
   isPullRequest: boolean;
+  isDraft: boolean;
   state: string;
   author: string | null;
   assignees: string[];
@@ -53,6 +54,7 @@ interface JoinedIssueRow {
   number: number;
   title: string;
   is_pull_request: number;
+  is_draft: number;
   state: string;
   author: string | null;
   assignees: string;
@@ -101,6 +103,7 @@ function hydrate(db: Database.Database, r: JoinedIssueRow): IssueView {
     number: r.number,
     title: r.title,
     isPullRequest,
+    isDraft: r.is_draft === 1,
     state: r.state,
     author: r.author,
     assignees: JSON.parse(r.assignees) as string[],
@@ -127,7 +130,7 @@ function buildGroup(
   const { where, params } = compileFilter(filter, repoIds, now, caseSensitive);
   const rows = db
     .prepare(
-      `SELECT issues.id, issues.number, issues.title, issues.is_pull_request, issues.state,
+      `SELECT issues.id, issues.number, issues.title, issues.is_pull_request, issues.is_draft, issues.state,
               issues.author, issues.assignees, issues.milestone, issues.created_at,
               issues.updated_at, issues.comments, issues.issue_type_name,
               issue_types.color AS issue_type_color,
