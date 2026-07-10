@@ -62,6 +62,10 @@ export const configSchema = z
     allowedHosts: z.array(z.string()).default([]),
     caseSensitive: z.boolean().default(false),
     forkAllowlist: z.array(repoName).default([]),
+    // A dumping ground for YAML anchors (&name) to be referenced (*name)
+    // elsewhere in the config. Ignored by the server; exists only so that
+    // .strict() doesn't reject a top-level `references:` key.
+    references: z.any().optional(),
     tabs: z.array(tabSchema).min(1),
   })
   .strict();
